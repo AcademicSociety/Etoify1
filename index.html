@@ -2,699 +2,1665 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Etoify - Web Version</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cars 2d | Street Racing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-color: #1DB954;
-            --primary-hover: #1ed760;
-            --bg-base: #000000;
-            --bg-panel: #121212;
-            --bg-hover: #282828;
-            --text-main: #ffffff;
-            --text-sub: #b3b3b3;
-            --player-height: 90px;
+            --bg-dark: #0f0f13;
+            --road-color: #2b2b36;
+            --gold: #FFD700;
+            --danger: #FF3366;
+            --text-light: #ffffff;
+            --panel-bg: rgba(20, 20, 30, 0.85);
+            --grass-color: #1e4620;
+            --shop-bg: #1a1a24;
+            --nav-bg: #14141e;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body {
+            margin: 0; padding: 0; background-color: var(--bg-dark); color: var(--text-light);
+            -webkit-tap-highlight-color: transparent; 
+            font-family: 'Cairo', sans-serif; display: flex; flex-direction: column;
+            height: 100vh; touch-action: none; overflow: hidden;
+            background-image: radial-gradient(circle at 50% 0%, #2a2a35 0%, #0f0f13 80%);
+            user-select: none;
+        }
 
-        body { background-color: var(--bg-base); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; transition: 0.3s; }
-
-        [dir="ltr"] .song-img, [dir="ltr"] .now-playing-img { margin-left: 0; margin-right: 15px; }
-        [dir="ltr"] .search-btn { margin-left: 0; margin-right: 10px; }
-        [dir="ltr"] .song-actions button { margin-right: 0; margin-left: 10px; }
-        [dir="ltr"] .like-btn { margin-right: 0; margin-left: 15px; }
-
-        .app-container { display: flex; flex: 1; height: calc(100vh - var(--player-height)); padding: 10px; gap: 10px; }
-
-        .sidebar { width: 280px; background-color: var(--bg-panel); border-radius: 10px; display: flex; flex-direction: column; padding: 20px 15px; }
-        .brand { display: flex; align-items: center; gap: 15px; font-size: 24px; font-weight: 800; margin-bottom: 30px; color: var(--text-main); }
-        .brand i { color: var(--primary-color); font-size: 30px; }
+        /* --- Header --- */
+        header {
+            width: 100%; display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 5%; box-sizing: border-box; background: rgba(15, 15, 20, 0.95);
+            border-bottom: 2px solid var(--gold); z-index: 10; gap: 10px; flex-shrink: 0;
+        }
+        h1 { margin: 0; color: var(--gold); font-size: 18px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); flex-grow: 1; }
         
-        .nav-links { list-style: none; display: flex; flex-direction: column; gap: 5px; }
-        .nav-links li { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-sub); font-weight: 600; transition: all 0.2s ease; display: flex; align-items: center; gap: 15px; }
-        .nav-links li:hover, .nav-links li.active { color: var(--text-main); background-color: var(--bg-hover); }
-        .nav-links li i { font-size: 20px; width: 25px; text-align: center; }
+        .header-stats {
+            display: flex; gap: 10px; align-items: center;
+        }
+        .header-coin-box {
+            background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--gold);
+            font-weight: 900; font-size: 14px; color: var(--gold);
+        }
 
-        .profile-section { margin-top: auto; display: flex; align-items: center; gap: 15px; padding: 15px 10px; background-color: var(--bg-base); border-radius: 10px; }
-        .profile-img { width: 45px; height: 45px; border-radius: 50%; background-color: var(--bg-hover); object-fit: cover; cursor: pointer; border: 2px solid transparent; transition: 0.3s;}
-        .profile-img:hover { border-color: var(--primary-color); }
-        .profile-info { display: flex; flex-direction: column; }
-        .profile-name { font-size: 14px; font-weight: bold; }
-        .profile-actions span { font-size: 12px; color: var(--primary-color); cursor: pointer; }
-        .profile-actions span:hover { text-decoration: underline; }
+        /* --- Main Content Area --- */
+        #main-content {
+            flex-grow: 1; position: relative; width: 100%; overflow-y: auto; overflow-x: hidden;
+            padding-bottom: 70px; /* Space for bottom nav */
+        }
 
-        .main-content { flex: 1; background-color: var(--bg-panel); border-radius: 10px; padding: 20px; overflow-y: auto; background: linear-gradient(to bottom, #1f1f1f, var(--bg-panel)); }
-        .page-title { font-size: 32px; font-weight: 800; margin-bottom: 20px; }
+        /* Tabs */
+        .tab-section { display: none; width: 100%; min-height: 100%; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box;}
+        .tab-section.active { display: flex; }
 
-        .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* --- Game Tab Specifics --- */
+        #game-tab { padding: 10px 0; }
+        #game-section { position: relative; border-radius: 15px; overflow: hidden; box-shadow: 0 15px 50px rgba(0,0,0,0.8); border: 4px solid #2a2a35;}
+        canvas { display: block; max-width: 100%; background-color: var(--grass-color); max-height: calc(100vh - 160px); object-fit: contain; }
 
-        .search-container { display: flex; gap: 10px; margin-bottom: 30px; }
-        .search-container input { flex: 1; padding: 15px 20px; border-radius: 25px; border: 1px solid transparent; background-color: #242424; color: white; font-size: 15px; outline: none; transition: 0.3s; }
-        .search-container input:focus { border-color: var(--primary-color); background-color: #2a2a2a; }
-        .search-btn, .action-btn { background-color: var(--primary-color); color: white; border: none; border-radius: 25px; padding: 10px 25px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .search-btn:hover, .action-btn:hover { background-color: var(--primary-hover); transform: scale(1.05); }
+        #ui-layer { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; font-weight: 900; pointer-events: none; z-index: 5; }
+        .ui-row { display: flex; justify-content: space-between; width: 100%; align-items: flex-start;}
+        .score-box { background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(4px); }
+        .pause-btn { pointer-events: auto; background: rgba(20, 20, 30, 0.8); border: 2px solid var(--gold); width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); transition: 0.2s; }
+        .pause-btn:active { transform: scale(0.9); }
+        .pause-btn div { width: 5px; height: 18px; background: var(--gold); border-radius: 2px; }
 
-        .song-card { display: flex; align-items: center; background-color: #181818; border-radius: 10px; padding: 15px; margin-bottom: 10px; transition: 0.3s; }
-        .song-card:hover { background-color: var(--bg-hover); }
-        .song-img { width: 60px; height: 60px; border-radius: 5px; background-color: #333; margin-left: 15px; background-size: cover; background-position: center; }
-        .song-info { flex: 1; }
-        .song-info h4 { font-size: 16px; margin-bottom: 5px; }
-        .song-info p { font-size: 13px; color: var(--text-sub); }
-        .song-actions button { background-color: transparent; color: var(--text-sub); border: 1px solid var(--text-sub); padding: 8px 15px; border-radius: 20px; margin-right: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .song-actions button:hover { color: white; border-color: white; }
-        .song-actions .play-btn { background-color: var(--primary-color); color: black; border: none; }
-        .song-actions .play-btn:hover { background-color: var(--primary-hover); }
+        #powerups-ui { position: absolute; bottom: 20px; left: 20px; display: flex; gap: 10px; pointer-events: none;}
+        .powerup-icon { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(0,0,0,0.7); border: 2px solid #fff; opacity: 0; transition: 0.3s; transform: scale(0.5); }
+        .powerup-icon.active { opacity: 1; transform: scale(1); animation: pulse 1s infinite; }
 
-        .settings-group { margin-bottom: 25px; display: flex; flex-direction: column; gap: 10px;}
-        .settings-group label { font-size: 16px; font-weight: bold; }
-        .settings-group select { width: 100%; max-width: 300px; padding: 12px; border-radius: 8px; background-color: #242424; color: white; border: 1px solid #333; font-size: 15px; outline: none; }
-        .settings-group select:focus { border-color: var(--primary-color); }
-        .settings-row { display: flex; align-items: center; gap: 15px; }
+        .overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 15, 19, 0.9); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; z-index: 10; padding: 20px;
+        }
 
-        .bottom-player { height: var(--player-height); background-color: var(--bg-base); border-top: 1px solid #282828; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
-        .player-left, .player-right { width: 30%; display: flex; align-items: center; }
-        .player-center { width: 40%; display: flex; flex-direction: column; align-items: center; }
+        .overlay h2 { font-size: 28px; color: var(--danger); margin-bottom: 5px; text-shadow: 0 0 15px rgba(255, 51, 102, 0.5); }
+        .overlay p { font-size: 16px; margin-bottom: 25px; color: #ccc; }
 
-        .now-playing-img { width: 56px; height: 56px; border-radius: 5px; background-color: #333; margin-left: 15px; background-size: cover; background-position: center; }
-        .now-playing-info h4 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
-        .now-playing-info p { font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
-        .like-btn { background: none; border: none; color: var(--text-sub); font-size: 18px; cursor: pointer; margin-right: 15px; transition: 0.2s; }
-        .like-btn:hover, .like-btn.active { color: var(--primary-color); }
+        /* Buttons */
+        .action-btn {
+            background: linear-gradient(135deg, var(--gold), #ffb700); color: #000; border: none;
+            padding: 10px 25px; font-size: 18px; font-weight: 900; font-family: 'Cairo', sans-serif;
+            border-radius: 10px; cursor: pointer; box-shadow: 0 5px 0 #b39700; transition: 0.2s; margin-top: 10px; width: 80%; max-width: 250px;
+        }
+        .action-btn:active { transform: translateY(5px); box-shadow: none; }
+        .close-btn { background: #555; box-shadow: 0 5px 0 #333; color: white; background-image: none;}
+        .btn-mission { background-color: #4cc9f0; box-shadow: 0 5px 0 #0096c7; color: #fff; background-image: none;}
 
-        .player-controls { display: flex; align-items: center; gap: 20px; margin-bottom: 8px; }
-        .control-btn { background: none; border: none; color: var(--text-sub); font-size: 16px; cursor: pointer; transition: 0.2s; }
-        .control-btn:hover { color: white; }
-        .play-pause-btn { width: 35px; height: 35px; background-color: white; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-        .play-pause-btn:hover { transform: scale(1.1); }
+        /* Missions Overlay inside Game */
+        .missions-list { width: 100%; text-align: right; margin-bottom: 20px; }
+        .mission-item { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; border-right: 4px solid var(--gold); }
+        .mission-item.done { border-color: #38b000; opacity: 0.6; }
+        .mission-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #fff;}
+        .mission-reward { font-size: 13px; color: var(--gold); }
 
-        .progress-container { width: 100%; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-sub); }
-        .progress-bar { flex: 1; height: 4px; background-color: #4d4d4d; border-radius: 2px; cursor: pointer; position: relative; }
-        .progress-fill { width: 0%; height: 100%; background-color: white; border-radius: 2px; transition: 0.1s; }
-        .progress-bar:hover .progress-fill { background-color: var(--primary-color); }
+        /* --- Shop Tab --- */
+        .shop-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px; width: 100%; max-width: 600px;}
+        .shop-header h2 { margin: 0; color: #fff; font-size: 22px; }
+        .shop-category-title { font-size: 18px; color: #4cc9f0; margin-top: 10px; margin-bottom: 10px; border-right: 3px solid #4cc9f0; padding-right: 10px; width: 100%; max-width: 600px; text-align: right;}
+
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; width: 100%; max-width: 600px; margin-bottom: 20px;}
         
-        .player-right { justify-content: flex-end; gap: 15px; }
-        .volume-bar { width: 100px; height: 4px; background-color: #4d4d4d; border-radius: 2px; cursor: pointer; }
-        .volume-fill { width: 100%; height: 100%; background-color: white; border-radius: 2px; }
-        .volume-bar:hover .volume-fill { background-color: var(--primary-color); }
+        .item-card {
+            background: var(--panel-bg); border: 2px solid transparent; border-radius: 12px; padding: 12px; 
+            text-align: center; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; position: relative;
+        }
+        .item-card.locked { filter: grayscale(80%); opacity: 0.8; }
+        .item-card.active { border-color: var(--gold); transform: scale(1.02); box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
+        .item-card.maxed { border-color: #38b000; }
         
-        .loader { border: 4px solid #333; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .car-preview { width: 45px; height: 70px; border-radius: 8px; position: relative; border: 2px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 10px rgba(0,0,0,0.8); margin-bottom: 10px; }
+        .upgrade-icon { font-size: 35px; margin-bottom: 10px; }
+        .item-name { font-size: 13px; font-weight: bold; margin-bottom: 5px; line-height: 1.2; height: 30px; display: flex; align-items: center; justify-content: center;}
+        .item-price { font-size: 12px; color: var(--gold); font-weight: bold; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 10px; margin-top: auto; width: 80%;}
+        .lock-icon { position: absolute; top: 30px; font-size: 24px; text-shadow: 0 2px 5px #000; z-index: 2;}
+        .level-dots { display: flex; gap: 3px; margin-bottom: 8px; }
+        .dot { width: 8px; height: 8px; background: #333; border-radius: 50%; }
+        .dot.filled { background: #38b000; box-shadow: 0 0 5px #38b000;}
 
-        /* ستايل صفحة الكلمات (Lyrics) المأخوذ من تصميمك */
-        .lyrics-wrapper { height: calc(100vh - 200px); overflow-y: auto; text-align: center; scroll-behavior: smooth; }
-        .lyrics-wrapper::-webkit-scrollbar { display: none; }
-        .lyric-line { font-size: 22px; color: #555555; font-weight: 600; padding: 10px; transition: all 0.3s ease-out; cursor: pointer; margin: 5px auto; max-width: 800px; line-height: 1.5; }
-        .lyric-line:hover { color: #888; }
-        .lyric-line.active { font-size: 32px; color: #1DB954; font-weight: 900; padding: 15px; transform: scale(1.05); text-shadow: 0 0 10px rgba(29, 185, 84, 0.3); }
-        .lyrics-header { display: flex; justify-content: flex-end; padding: 0 30px; margin-bottom: 10px; }
+        /* --- Settings Tab --- */
+        .settings-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; margin-top: 20px;}
+        .setting-item { background: var(--panel-bg); padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);}
+        .setting-label { font-size: 16px; font-weight: bold;}
+        .toggle-btn { background: #333; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-family: 'Cairo'; font-weight: bold; cursor: pointer;}
+        .toggle-btn.active { background: #38b000; }
+        .danger-btn { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 8px; font-family: 'Cairo'; font-weight: bold; cursor: pointer; margin-top: 20px;}
+
+        /* --- About Dev Tab --- */
+        .about-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 40px; }
+        .dev-card {
+            background: linear-gradient(145deg, #1f1f2e, #14141e); border: 2px solid var(--gold);
+            border-radius: 20px; padding: 30px 20px; text-align: center; width: 100%; box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.1); position: relative; overflow: hidden;
+        }
+        .dev-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 60%); z-index: 0; animation: rotateBg 10s linear infinite;}
+        .dev-content { position: relative; z-index: 1;}
+        .dev-avatar {
+            width: 90px; height: 90px; background: var(--gold); border-radius: 50%; margin: 0 auto 15px;
+            display: flex; justify-content: center; align-items: center; font-size: 36px; font-weight: 900; color: #000; border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .dev-title { font-size: 24px; color: #fff; margin: 0 0 5px 0; font-weight: 900;}
+        .dev-subtitle { font-size: 14px; color: #4cc9f0; margin: 0 0 25px 0; font-weight: bold;}
+        .portfolio-btn {
+            display: inline-block; background: var(--gold); color: #000; text-decoration: none;
+            padding: 12px 25px; border-radius: 25px; font-weight: 900; font-size: 16px;
+            box-shadow: 0 5px 15px rgba(255,215,0,0.3); transition: 0.3s; width: 80%;
+        }
+        .portfolio-btn:active { transform: scale(0.95); }
+        .made-with { margin-top: 30px; font-size: 12px; color: #666; font-weight: bold; letter-spacing: 1px;}
+
+        @keyframes rotateBg { 100% { transform: rotate(360deg); } }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around;
+            background: var(--nav-bg); padding: 12px 0 15px 0; border-top: 2px solid #2a2a35;
+            z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); border-top-left-radius: 20px; border-top-right-radius: 20px;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; color: #777;
+            font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; flex: 1;
+        }
+        .nav-icon { font-size: 22px; margin-bottom: 4px; filter: grayscale(100%); transition: 0.3s;}
+        .nav-item.active { color: var(--gold); transform: translateY(-5px); }
+        .nav-item.active .nav-icon { filter: grayscale(0%); transform: scale(1.1); text-shadow: 0 0 10px rgba(255,215,0,0.5);}
+
+        /* Utils */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-4px, 0, 0); } 20%, 80% { transform: translate3d(6px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0px rgba(255,255,255, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(255,255,255, 0); } }
+
+/* --- Fullscreen Adjustments --- */
+        #game-section:fullscreen { border: none; border-radius: 0; background-color: var(--grass-color); }
+        #game-section:fullscreen canvas { max-height: 100vh; height: 100vh; width: 100vw; object-fit: cover; }
+        #game-section:-webkit-full-screen { border: none; border-radius: 0; background-color: var(--grass-color); }
+        #game-section:-webkit-full-screen canvas { max-height: 100vh; height: 100vh; width: 100vw; object-fit: cover; }
+
+/* --- Daily Rewards Tab --- */
+        .daily-status { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; width: 100%; max-width: 400px; }
+        .streak-box { background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 15px; border: 2px solid #ff3366; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+        .daily-reward-box { background: var(--panel-bg); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; text-align: center; width: 100%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,215,0,0.1); display: flex; flex-direction: column; align-items: center; }
+        .reward-icon { font-size: 60px; margin-bottom: 10px; animation: pulse 2s infinite; }
+        .reward-amount { font-size: 36px; color: var(--gold); font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+        .claim-btn-disabled { background: #555 !important; color: #888 !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important; }
+
+/* --- New Shop Features (Slider, Search, Roads) --- */
+        .search-bar { width: 100%; max-width: 600px; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--gold); background: rgba(0,0,0,0.5); color: white; margin-bottom: 10px; font-family: 'Cairo'; outline: none; transition: 0.3s; box-sizing: border-box;}
+        .search-bar:focus { box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+        
+        .slider-container { display: flex; align-items: center; gap: 5px; width: 100%; max-width: 600px; margin-bottom: 20px; }
+        .shop-slider { display: flex; overflow-x: auto; scroll-behavior: smooth; gap: 15px; padding: 10px 5px; flex-grow: 1; }
+        .shop-slider::-webkit-scrollbar { display: none; } /* إخفاء شريط التمرير */
+        .shop-slider { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .nav-arrow { background: rgba(0,0,0,0.6); color: var(--gold); border: 2px solid var(--gold); border-radius: 50%; width: 35px; height: 35px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 18px; transition: 0.2s;}
+        .nav-arrow:active { transform: scale(0.9); background: var(--gold); color: #000; }
+        
+        .road-preview { width: 60px; height: 60px; border-radius: 50%; border: 3px dashed #fff; margin-bottom: 10px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
+
+/* --- Leaderboard Tab --- */
+        #leaderboard-list { width: 100%; max-width: 500px; margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .lb-item { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); padding: 12px 15px; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.2); transition: 0.3s; }
+        .lb-item:hover { transform: scale(1.02); border-color: var(--gold); }
+        .lb-rank { font-weight: 900; color: var(--gold); width: 40px; font-size: 20px; }
+        .lb-name { flex-grow: 1; text-align: right; margin-right: 10px; font-weight: bold; font-size: 16px; color: #fff; }
+        .lb-level { background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 8px; font-size: 12px; color: #4cc9f0; margin-right: 10px; border: 1px solid #4cc9f0; }
+        .lb-stats { font-size: 14px; color: #ccc; text-align: left; font-weight: bold; }
+
+/* زرار الشات الجديد */
+        .chat-btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 20px;
+            font-family: 'Cairo', sans-serif; 
+            font-weight: bold; 
+            cursor: pointer;
+            font-size: 13px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            transition: 0.3s; 
+            border: 1px solid rgba(255,255,255,0.2);
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+        .chat-btn:hover { 
+            transform: scale(1.05); 
+            filter: brightness(1.2); 
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5);
+        }
+
+/* --- Music Manager Styles --- */
+        .music-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 215, 0, 0.1);
+        }
+        .music-item.active { 
+            border-color: var(--gold); 
+            background: rgba(255, 215, 0, 0.1); 
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+        .music-controls { display: flex; gap: 8px; }
+        .btn-play { background: #38b000; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'Cairo'; }
+        .btn-del { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        #youtube-player-container { width: 0; height: 0; position: absolute; visibility: hidden; pointer-events: none; }
+
     </style>
 </head>
 <body>
 
-    <input type="file" id="avatarUpload" accept="image/*" style="display: none;" onchange="window.handleAvatarUpload(event)">
+    <header>
+        <h1 id="title-text">Cars 2d 🏎️</h1>
+        <button class="chat-btn" onclick="location.href='chat.html'">💬 General Chat</button>
+        <div class="header-stats">
+            <button class="toggle-btn" onclick="toggleLanguage()" id="header-lang-btn" style="padding: 4px 10px; font-size:12px;">EN</button>
+            <div class="header-coin-box" style="border-color: #4cc9f0;">🏆 <span id="highscore" style="color: #4cc9f0;">0</span></div>
+            <div class="header-coin-box">💰 <span id="global-coins">0</span></div>
+        </div>
+    </header>
 
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="brand">
-                <i class="fa-brands fa-spotify"></i>
-                <span>Etoify</span>
-            </div>
-
-            <ul class="nav-links">
-                <li class="active" onclick="window.switchPage('home')"><i class="fa-solid fa-house"></i> <span data-i18n="home">الرئيسية</span></li>
-                <li onclick="window.switchPage('search')"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search">بحث</span></li>
-                <li onclick="window.switchPage('liked')"><i class="fa-solid fa-heart"></i> <span data-i18n="liked">المفضلة</span></li>
-                <li onclick="window.switchPage('lyrics')"><i class="fa-solid fa-microphone-lines"></i> <span data-i18n="lyrics">الكلمات</span></li>
-                <li onclick="window.switchPage('settings')"><i class="fa-solid fa-gear"></i> <span data-i18n="settings">الإعدادات</span></li>
-            </ul>
-
-            <div class="profile-section">
-                <img src="https://via.placeholder.com/45" alt="Avatar" class="profile-img" onclick="document.getElementById('avatarUpload').click()" title="تغيير الصورة">
-                <div class="profile-info">
-                    <span class="profile-name" id="userName">Eng. Mohammed</span>
-                    <div class="profile-actions">
-                        <span onclick="window.changeName()" data-i18n="changeName">تغيير الاسم</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <h1 class="page-title" id="pageTitle" data-i18n="home_title">مرحباً بك في Etoify</h1>
-
-            <div id="page-home" class="page active">
-                <p data-i18n="home_desc">استمع لأغانيك المفضلة من يوتيوب مباشرة!</p>
-            </div>
-
-            <div id="page-search" class="page">
-                <div class="search-container">
-                    <input type="text" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="ابحث عن أغنية أو فنان...">
-                    <button class="search-btn" onclick="window.performSearch()"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search_btn">ابحث</span></button>
-                </div>
-                <div class="loader" id="searchLoader"></div>
-                <div id="searchResults"></div>
-            </div>
-
-            <div id="page-liked" class="page">
-                <div id="likedSongsList">
-                    <p data-i18n="no_liked">لا توجد أغاني في المفضلة حتى الآن.</p>
-                </div>
-            </div>
-
-            <div id="page-lyrics" class="page">
-                <div class="lyrics-header">
-                    <button class="action-btn" id="copyLyricsBtn" onclick="window.copyLyricsToClipboard()" style="border-radius: 15px;"><i class="fa-regular fa-copy"></i> Copy Lyrics</button>
-                </div>
-                <div class="lyrics-wrapper" id="lyricsContainer">
-                    <p class="lyric-line" data-i18n="lyrics_empty">شغّل أغنية عشان تشوف الكلمات هنا...</p>
-                </div>
-            </div>
-
-            <div id="page-settings" class="page">
-                <div class="settings-group">
-                    <label data-i18n="prof_settings">إعدادات الحساب / Account Settings</label>
-                    <div class="settings-row">
-                        <img src="https://via.placeholder.com/45" alt="Avatar" class="profile-img" style="width: 60px; height: 60px;">
-                        <button class="action-btn" onclick="document.getElementById('avatarUpload').click()" data-i18n="changePic">تغيير الصورة</button>
-                        <button class="action-btn" onclick="window.changeName()" data-i18n="changeName">تغيير الاسم</button>
+    <div id="main-content">
+        
+        <section id="game-tab" class="tab-section active">
+            <div id="game-section">
+                <div id="ui-layer">
+                    <div class="ui-row">
+                        <span class="score-box" id="score-text">السكور: <span id="score" style="color: var(--gold);">0</span></span>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="pause-btn" onclick="togglePause()"><div></div><div></div></button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="settings-group">
-                    <label data-i18n="lang_label">اللغة / Language</label>
-                    <select id="langSelect" onchange="window.changeLanguage(this.value)">
-                        <option value="ar">العربية (Arabic)</option>
-                        <option value="en">English (الإنجليزية)</option>
-                    </select>
+                <div id="powerups-ui">
+                    <div id="shield-icon" class="powerup-icon" style="border-color: #4cc9f0; color: #4cc9f0;">🛡️</div>
+                    <div id="magnet-icon" class="powerup-icon" style="border-color: #ff3366; color: #ff3366;">🧲</div>
+                </div>
+                
+                <canvas id="gameCanvas" width="400" height="600"></canvas>
+                
+                <div id="start-screen" class="overlay">
+                    <h2 id="ready-text" style="color: var(--text-light);">جاهز تدوس؟</h2>
+                    <p id="instruction-text">اسحب بصباعك يمين وشمال للتحكم</p>
+                    <button class="action-btn" onclick="startGame()" id="start-btn">دوس يابا </button>
+                    <button class="action-btn btn-mission" onclick="showMissions()" id="mission-btn" style="font-size: 16px; margin-top: 15px;">المهمات 📋</button>
+                </div>
+
+                <div id="game-over-screen" class="overlay" style="display: none;">
+                    <h2 id="crash-text">لبست في الحيط! 💥</h2>
+                    <p id="final-stats">السكور: <span id="final-score" style="color:var(--gold)">0</span><br>الكوينز: <span id="final-coins" style="color:var(--gold)">0</span></p>
+                    <button class="action-btn" onclick="resetGame()" id="restart-btn">العب تاني 🔄</button>
+                </div>
+
+                <div id="pause-screen" class="overlay" style="display: none;">
+                    <h2 id="pause-text" style="color: var(--gold);">وقفنا شوية ⏸</h2>
+                    <button class="action-btn" onclick="togglePause()" id="resume-btn">كمل لعب 🏁</button>
+                </div>
+
+                <div id="mission-screen" class="overlay" style="display: none;">
+                    <h2 id="mission-title-text" style="color: #4cc9f0;">المهمات المطلوبة 📋</h2>
+                    <div class="missions-list" id="missions-list"></div>
+                    <button class="action-btn close-btn" onclick="hideMissions()" id="close-mission-btn">قفل ❌</button>
                 </div>
             </div>
-        </main>
+        </section>
+
+        <section id="shop-tab" class="tab-section">
+            <div class="shop-header">
+                <h2 id="shop-title-text">المتجر 🛒</h2>
+            </div>
+            
+            <div class="shop-category-title" id="shop-cars-title">العربيات 🚘</div>
+            <input type="text" class="search-bar" id="search-cars" placeholder="ابحث عن عربية..." onkeyup="renderShop()">
+            <div class="slider-container">
+                <button class="nav-arrow" onclick="scrollShop('garage', -1)">◀</button> <div class="shop-slider" id="garage"></div>
+                <button class="nav-arrow" onclick="scrollShop('garage', 1)">▶</button>
+            </div>
+
+
+            <div class="shop-category-title" id="shop-upgrades-title">التطويرات 🛠️</div>
+            <input type="text" class="search-bar" id="search-upgrades" placeholder="ابحث عن تطوير..." onkeyup="renderShop()">
+            <div class="shop-grid" id="upgrades"></div> </section>
+
+        <section id="settings-tab" class="tab-section">
+            <h2 id="settings-title" style="color:var(--gold); align-self: flex-start; margin:0 0 10px 0;">الإعدادات ⚙️</h2>
+            <div class="settings-container">
+                <div class="setting-item">
+                    <span class="setting-label" id="lbl-sound">المؤثرات الصوتية</span>
+                    <button class="toggle-btn active" id="btn-sound" onclick="toggleSound()">شغال ON</button>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label" id="lbl-music">الموسيقى</span>
+                    <button class="toggle-btn active" id="btn-music" onclick="toggleMusic()">شغال ON</button>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label" id="lbl-lang">لغة اللعبة</span>
+                    <button class="toggle-btn" id="btn-lang-settings" onclick="toggleLanguage()">عربي / EN</button>
+                </div>
+                <button class="action-btn" onclick="showMusicManager()" style="background: #4cc9f0; box-shadow: 0 5px 0 #0096c7; margin-bottom: 10px; width: 100%;">مكتبة الأغاني 🎵</button>
+                <button class="danger-btn" onclick="resetAllData()" id="btn-reset-data">مسح جميع بيانات اللعبة ⚠️</button>
+                <button class="danger-btn" onclick="logout()" style="background: #ffb703; color: black; margin-top: 10px;">تسجيل خروج من الحساب 🚪</button>
+            </div>
+        </section>
+
+        <section id="about-tab" class="tab-section">
+            <div class="about-container">
+                <div class="dev-card">
+                    <div class="dev-content">
+                        <img src="dev.png" class="dev-avatar" style="object-fit: cover;">
+                        <h3 class="dev-title">Mohammed Eto</h3>
+                        <p class="dev-subtitle" id="dev-subtitle">Game Developer & UI/UX Designer</p>
+                        <a href="https://engmohammedsaad.github.io/Eto.io/" target="_blank" class="portfolio-btn" id="portfolio-btn">Developer Portfolio</a>
+                        <a href="https://wa.me/201096925903" target="_blank" class="portfolio-btn" style="background: #25D366; color: white; margin-top: 10px;">تواصل واتساب 💬</a>
+                        <button id="admin-panel-btn" class="portfolio-btn" style="background: #FF3366; color: white; margin-top: 10px; border:none; display: none; cursor:pointer;" onclick="window.location.href='admin.html'">لوحة تحكم المطور ⚙️</button>
+                    </div>
+                </div>
+                <div class="made-with" id="made-with-text">MADE BY MOHAMMED ETO © 2026</div>
+            </div>
+        </section>
+
+        <section id="daily-tab" class="tab-section">
+            <div class="shop-header">
+                <h2 id="daily-title-text">المكافآت اليومية 🎁</h2>
+            </div>
+            <div class="daily-status">
+                <div class="streak-box">الاستريك: <span id="current-streak" style="color: var(--gold);">0</span> 🔥</div>
+                <p id="daily-desc" style="font-size: 14px; color: #ccc; text-align: center;">افتح اللعبة كل يوم عشان تضاعف مكافأتك! لو فوت يوم، هترجع للصفر.</p>
+            </div>
+            <div class="daily-reward-box" id="daily-reward-box">
+                <div class="reward-icon">💰</div>
+                <div class="reward-amount" id="reward-amount">+50</div>
+                <button class="action-btn" id="claim-btn" onclick="claimDailyReward()">استلام المكافأة</button>
+                <div id="claim-timer" style="display: none; color: var(--danger); margin-top: 10px; font-weight: bold;"></div>
+            </div>
+            <div class="shop-header" style="margin-top: 30px;">
+                <h2>أكواد الهدايا 🎟️</h2>
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%; max-width: 400px; margin-bottom: 20px;">
+                <input type="text" id="redeem-input" class="search-bar" placeholder="اكتب الكود هنا..." style="margin:0; flex-grow:1; text-transform: uppercase;">
+                <button class="action-btn" onclick="redeemCode()" style="margin:0; width: auto; padding: 8px 15px;">استرداد</button>
+            </div>
+        </section>
+
+        <section id="leaderboard-tab" class="tab-section">
+            <div class="shop-header" style="justify-content: center; border-bottom: none;">
+                <h2 style="color: var(--gold); font-size: 24px;">🏆 قائمة الأبطال</h2>
+            </div>
+            <div id="leaderboard-list">
+                </div>
+        </section>
+
     </div>
 
-    <footer class="bottom-player">
-        <div class="player-left">
-            <div class="now-playing-img" id="playerImg"></div>
-            <div class="now-playing-info">
-                <h4 id="playerTitle" data-i18n="ready">جاهز للتشغيل</h4>
-                <p id="playerArtist" data-i18n="select_song">اختر أغنية</p>
-            </div>
-            <button class="like-btn" id="playerLikeBtn" onclick="window.toggleLikeCurrent()"><i class="fa-regular fa-heart"></i></button>
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('game-tab', this)" id="nav-play">
+            <span class="nav-icon">🎮</span>
+            <span class="nav-text">اللعب</span>
         </div>
+        <div class="nav-item" onclick="switchTab('shop-tab', this)" id="nav-shop">
+            <span class="nav-icon">🛒</span>
+            <span class="nav-text">المتجر</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('daily-tab', this)" id="nav-daily">
+            <span class="nav-icon">🎁</span>
+            <span class="nav-text">مكافآت</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('settings-tab', this)" id="nav-settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">إعدادات</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('leaderboard-tab', this); loadLeaderboardData()" id="nav-leaderboard">
+            <span class="nav-icon">🏆</span>
+            <span class="nav-text">Leaderboard</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('about-tab', this)" id="nav-about">
+            <span class="nav-icon">👨‍💻</span>
+            <span class="nav-text">المطور</span>
+        </div>
+    </nav>
 
-        <div class="player-center">
-            <div class="player-controls">
-                <button class="control-btn"><i class="fa-solid fa-backward-step"></i></button>
-                <button class="control-btn play-pause-btn" onclick="window.togglePlay()">
-                    <i class="fa-solid fa-play" id="playIcon"></i>
-                </button>
-                <button class="control-btn"><i class="fa-solid fa-forward-step"></i></button>
+    <div id="music-manager-screen" class="overlay" style="display: none; justify-content: flex-start; padding-top: 40px; overflow-y: auto; z-index: 9999;">
+        <h2 style="color: var(--gold); margin-bottom: 20px;">مكتبة الموسيقى 🎶</h2>
+        <div style="width: 90%; max-width: 450px;">
+            <div style="display: flex; gap: 5px; margin-bottom: 20px;">
+                <input type="text" id="yt-link-input" class="search-bar" placeholder="ضع رابط يوتيوب هنا..." style="margin:0; flex-grow:1; background: #222; color: white; border: 1px solid #444; padding: 10px;">
+                <button class="action-btn" onclick="addSong()" style="margin:0; width: auto; padding: 8px 15px; font-size: 14px;">إضافة +</button>
             </div>
-            <div class="progress-container">
-                <span id="currentTime">0:00</span>
-                <div class="progress-bar" id="progressBar" onclick="window.seekAudio(event)">
-                    <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            
+            <div id="music-list-container" style="text-align: right;">
                 </div>
-                <span id="totalTime">0:00</span>
-            </div>
         </div>
+        <button class="action-btn close-btn" onclick="hideMusicManager()" style="margin-top: 20px; width: 150px;">رجوع ⬅️</button>
+        <div id="youtube-player-container" style="display:none;"></div> 
+    </div>
 
-        <div class="player-right">
-            <button class="control-btn"><i class="fa-solid fa-volume-high"></i></button>
-            <div class="volume-bar" id="volumeBar" onclick="window.changeVolume(event)">
-                <div class="volume-fill" id="volumeFill"></div>
-            </div>
-        </div>
+    <script>
+        // --- Navigation Logic ---
+        function switchTab(tabId, element) {
+            // Pause game if navigating away
+            if(tabId !== 'game-tab' && isGameRunning && !isPaused) {
+                togglePause();
+            }
+
+            // Update Tabs
+            document.querySelectorAll('.tab-section').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            // Update Nav Items
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        // --- Game Data & Storage ---
+        let lastClaimDate = localStorage.getItem('hw_last_claim') || "";
+        let currentStreak = parseInt(localStorage.getItem('hw_streak')) || 0;
         
-        <audio id="realAudioPlayer" style="display:none;"></audio>
-    </footer>
+
+        const dailyConfig = {
+            baseReward: 50,       
+            streakBonus: 20,      
+            maxStreak: 30       
+        };
+        let totalSavedCoins = parseInt(localStorage.getItem('hw_coins')) || 0;
+        let savedHighScore = parseInt(localStorage.getItem('hw_highscore')) || 0;
+        let unlockedCars = JSON.parse(localStorage.getItem('hw_unlocked')) || [0]; 
+        let selectedCarIndex = parseInt(localStorage.getItem('hw_selected_car')) || 0;
+        
+        let upgradeLevels = JSON.parse(localStorage.getItem('hw_upgrades')) || {
+            magnet: 0, shield: 0, multiplier: 0
+        };
+
+        let soundEnabled = localStorage.getItem('hw_sound') !== 'false';
+        let musicEnabled = localStorage.getItem('hw_music') !== 'false';
+
+// --- Missions System ---
+        let lastMissionDate = localStorage.getItem('hw_last_mission_date');
+        const todayDate = new Date().toDateString();
+        
+        // دي لستة المهام كلها (تقدر تزود فيها مهام زي ما تحب بنفس الشكل)
+        const defaultMissions = [
+            { id: 1, type: 'coins', target: 50, reward: 200, done: false, ar: 'اجمع 50 كوين في جولة', en: 'Collect 50 coins in a run' },
+            { id: 2, type: 'score', target: 500, reward: 300, done: false, ar: 'اوصل لسكور 500', en: 'Reach 500 score' },
+            { id: 3, type: 'coins', target: 100, reward: 500, done: false, ar: 'اجمع 100 كوين في جولة', en: 'Collect 100 coins in a run' },
+            { id: 4, type: 'score', target: 1000, reward: 1000, done: false, ar: 'اوصل لسكور 1000', en: 'Reach 1000 score' },
+            { id: 5, type: 'coins', target: 200, reward: 800, done: false, ar: 'اجمع 200 كوين في جولة', en: 'Collect 200 coins in a run' }
+        ];
+
+        let missions = JSON.parse(localStorage.getItem('hw_missions'));
+
+        // لو دي أول مرة اللاعب يفتح النهاردة، أو مفيش مهام متسجلة، هنرسّت المهام
+        if (!missions || lastMissionDate !== todayDate) {
+            // بننسخ المهام الافتراضية عشان تتجدد
+            missions = JSON.parse(JSON.stringify(defaultMissions)); 
+            localStorage.setItem('hw_missions', JSON.stringify(missions));
+            localStorage.setItem('hw_last_mission_date', todayDate);
+        }
+
+        // --- Translations ---
+        let currentLang = localStorage.getItem('hw_lang') || 'ar';
+        const texts = {
+            ar: {
+                title: "Cars 2d 🏎️", langBtn: "EN", missionBtn: "المهمات 📋", ready: "جاهز تدوس؟",
+                instruction: "اسحب بصباعك يمين وشمال للتحكم 👆", start: "دوس يابا ",
+                score: "السكور:", highscore: "أعلى سكور:", crash: "لبست في الحيط! 💥", restart: "العب تاني 🔄",
+                buy: "شراء", selected: "محددة", select: "اختيار", notEnough: "الكوينز مش كفاية!",
+                pause: "وقفنا شوية ⏸", resume: "كمل لعب 🏁", missionTitle: "المهمات المطلوبة 📋", close: "قفل ❌",
+                reward: "المكافأة:", done: "تم الانجاز ✅", shopTitle: "المتجر 🛒", shopCars: "العربيات 🚘",
+                shopUpgrades: "التطويرات 🛠️", maxLevel: "ماكس", upgMagnet: "المغناطيس", upgShield: "الدرع", upgMulti: "مضاعف الكوينز",
+                navPlay: "اللعب", navShop: "المتجر", navSettings: "إعدادات", navAbout: "المطور", shopRoads: "أشكال الطريق 🛣️", searchCars: "ابحث عن عربية...", searchRoads: "ابحث عن طريق...", searchUpg: "ابحث عن تطوير...",
+                settingsTitle: "الإعدادات ⚙️", lblSound: "المؤثرات الصوتية", lblMusic: "الموسيقى", lblLang: "لغة اللعبة", 
+                btnOn: "شغال ON", btnOff: "مقفول OFF", btnReset: "مسح جميع بيانات اللعبة ⚠️", devSub: "مطور ألعاب ", portBtn: "السايت الرئيسي",
+                confirmReset: "هل أنت متأكد من مسح جميع التقدم والسيارات والكوينز؟ لا يمكن التراجع!", navDaily: "مكافآت", dailyTitle: "المكافآت اليومية 🎁", dailyDesc: "افتح اللعبة كل يوم عشان تضاعف مكافأتك! لو فوت يوم، هترجع للصفر.",
+            },
+            en: {
+                title: "Cars 2d 🏎️", langBtn: "عربي", missionBtn: "Missions 📋", ready: "Ready to Race?",
+                instruction: "Swipe Left or Right to steer 👆", start: "Race Now", shopRoads: "Road Designs 🛣️", searchCars: "Search cars...", searchRoads: "Search roads...", searchUpg: "Search upgrades...",
+                score: "Score:", highscore: "Best:", crash: "Wasted! 💥", restart: "Try Again 🔄",
+                buy: "Buy", selected: "Selected", select: "Select", notEnough: "Not enough coins!",
+                pause: "Paused ⏸", resume: "Resume 🏁", missionTitle: "Active Missions 📋", close: "Close ❌",
+                reward: "Reward:", done: "Completed ✅", shopTitle: "Shop 🛒", shopCars: "Vehicles 🚘",
+                shopUpgrades: "Upgrades 🛠️", maxLevel: "MAX", upgMagnet: "Magnet", upgShield: "Shield", upgMulti: "Multiplier",
+                navPlay: "Play", navShop: "Shop", navSettings: "Settings", navAbout: "About Dev",
+                settingsTitle: "Settings ⚙️", lblSound: "Sound Effects", lblMusic: "Music", lblLang: "Language", 
+                btnOn: "ON", btnOff: "OFF", btnReset: "Reset All Game Data ⚠️", devSub: "Game Developer & UI/UX Designer", portBtn: "Developer Portfolio",
+                confirmReset: "Are you sure you want to delete all progress, cars, and coins? This cannot be undone!", navDaily: "Daily", dailyTitle: "Daily Rewards 🎁", dailyDesc: "Open the game every day to multiply your reward! Skip a day, back to zero."
+            }
+        };
+
+        // --- Audio System ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        
+        let bgMusic = new Audio('music.wav'); // Replace with actual music file
+        bgMusic.loop = true; 
+        bgMusic.volume = 0.4; 
+
+        async function initAudio() { 
+            if (!audioCtx && soundEnabled) {
+                audioCtx = new AudioContext(); 
+                try {
+                    // تم تعديل المسار ليقرأ الملف من نفس الفولدر
+                    const response = await fetch('beep-warning.mp3');
+                    const arrayBuffer = await response.arrayBuffer();
+                    warningBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                } catch(e) { console.log("Error loading warning sound", e); }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); 
+        }
+
+        function playWarningSequence() {
+            if (!audioCtx || !warningBuffer || !soundEnabled) return;
+            // بنكرر النص ثانية الأولى 4 مرات ورا بعض
+            for(let i=0; i<4; i++) {
+                const source = audioCtx.createBufferSource();
+                source.buffer = warningBuffer;
+                source.connect(audioCtx.destination);
+                // بتبدأ تشتغل بعد (i * 0.5) ثانية، وتقص من بداية الملف 0، ولمدة 0.5 ثانية
+                source.start(audioCtx.currentTime + (i * 0.5), 0, 0.5);
+            }
+        }
+
+        function logout() {
+            if(confirm("متأكد إنك عايز تخرج من الحساب؟")) {
+                localStorage.removeItem('game_uid');
+                localStorage.removeItem('game_username');
+                window.location.href = 'loading.html';
+            }
+        }
+
+        window.redeemCode = async function() {
+            const input = document.getElementById('redeem-input');
+            const code = input.value.trim().toUpperCase();
+            if(!code) return;
+
+            let usedCodes = JSON.parse(localStorage.getItem('hw_used_codes')) || [];
+            if(usedCodes.includes(code)) {
+                alert("الكود ده استخدمته قبل كده يا معلم! ❌");
+                return;
+            }
+
+            try {
+                // غيّر اللينك ده بلينك الـ Raw بتاع فايل الـ json على الجيت هاب بتاعك
+                const response = await fetch('https://raw.githubusercontent.com/AcademicSociety/Academic-Society/refs/heads/main/codes.json');
+                const codesData = await response.json();
+
+                if(codesData[code]) {
+                    const reward = codesData[code];
+                    totalSavedCoins += reward;
+                    usedCodes.push(code);
+                    localStorage.setItem('hw_used_codes', JSON.stringify(usedCodes));
+                    saveProgress();
+                    updateGlobalCoins();
+                    initAudio(); playSound('buy');
+                    alert(`عاش! كسبت ${reward} كوينز 💰`);
+                    input.value = '';
+                } else {
+                    alert("الكود ده مش موجود أو غلط! ❌");
+                }
+            } catch(e) {
+                alert("في مشكلة في الاتصال بالسيرفر! ⚠️");
+                console.error(e);
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                if (type === 'coin') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+                } else if (type === 'powerup') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'crash') {
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.4);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'buy') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(1500, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                }
+            } catch(e){}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('hw_sound', soundEnabled);
+            updateSettingsUI();
+            if(soundEnabled) initAudio();
+        }
+
+        function toggleMusic() {
+            musicEnabled = !musicEnabled;
+            localStorage.setItem('hw_music', musicEnabled);
+            updateSettingsUI();
+            if(musicEnabled && isGameRunning && !isPaused) bgMusic.play().catch(e=>console.log(e));
+            else bgMusic.pause();
+        }
+
+        function updateSettingsUI() {
+            const btnSound = document.getElementById('btn-sound');
+            const btnMusic = document.getElementById('btn-music');
+            
+            if(soundEnabled) { btnSound.classList.add('active'); btnSound.innerText = texts[currentLang].btnOn; }
+            else { btnSound.classList.remove('active'); btnSound.innerText = texts[currentLang].btnOff; }
+
+            if(musicEnabled) { btnMusic.classList.add('active'); btnMusic.innerText = texts[currentLang].btnOn; }
+            else { btnMusic.classList.remove('active'); btnMusic.innerText = texts[currentLang].btnOff; }
+        }
+
+        const cars = [
+            { id: 0, color: '#e63946', price: 0, nameAr: 'المبتدئ', nameEn: 'Rookie' },
+            { id: 1, color: '#4cc9f0', price: 200, nameAr: 'شبح الليل', nameEn: 'Night Ghost' },
+            { id: 2, color: '#ffb703', price: 500, nameAr: 'التاكسي', nameEn: 'The Taxi' },
+            { id: 3, color: '#38b000', price: 1000, nameAr: 'الضفدع', nameEn: 'Green Viper' },
+            { id: 4, color: '#f72585', price: 2000, nameAr: 'بينك بانثر', nameEn: 'Pink Panther' },
+            { id: 5, color: '#00b4d8', price: 3500, nameAr: 'برق', nameEn: 'Lightning' },
+            { id: 6, color: '#fff',   price: 5000, nameAr: 'الشرطة', nameEn: 'Police' },
+            { id: 7, color: '#2b2d42', price: 8000, nameAr: 'باتمان', nameEn: 'Dark Knight' },
+            { id: 8, color: '#FFD700', price: 15000, nameAr: 'الأسطورة', nameEn: 'Gold Legend' },
+            { id: 9, color: '#5e60ce', price: 20000, nameAr: 'النオン', nameEn: 'Neon Wave' },
+            { id: 10, color: '#ff5400', price: 30000, nameAr: 'النمر', nameEn: 'The Tiger' },
+            { id: 11, color: '#390099', price: 50000, nameAr: 'الزعيم', nameEn: 'The Boss' },
+            { id: 12, color: '#000000', price: 100000, nameAr: 'ثقب أسود', nameEn: 'Black Hole' },
+            { id: 13, color: '#00f5d4', price: 150000, nameAr: 'الوميض الأزرق', nameEn: 'Blue Flash' },
+            { id: 14, color: '#9d4edd', price: 200000, nameAr: 'المجرة', nameEn: 'Galaxy' },
+            { id: 15, color: '#ff0054', price: 250000, nameAr: 'الوحش الوردي', nameEn: 'Pink Beast' },
+            { id: 16, color: '#ccff33', price: 300000, nameAr: 'سم الأفعى', nameEn: 'Snake Venom' },
+            { id: 17, color: '#240046', price: 400000, nameAr: 'سيد الظلام', nameEn: 'Dark Master' },
+            { id: 18, color: '#fb5607', price: 550000, nameAr: 'البركان', nameEn: 'Volcano' },
+            { id: 19, color: '#3a86ff', price: 700000, nameAr: 'المحيط الهائج', nameEn: 'Stormy Ocean' },
+            { id: 20, color: '#8338ec', price: 900000, nameAr: 'البرق البنفسجي', nameEn: 'Purple Bolt' },
+            { id: 21, color: '#ffbe0b', price: 1200000, nameAr: 'الشمس المشرقة', nameEn: 'Sunrise' },
+            { id: 22, color: '#70e000', price: 1500000, nameAr: 'الزمردة', nameEn: 'Emerald' },
+            { id: 23, color: '#d00000', price: 1800000, nameAr: 'غضب الدم', nameEn: 'Blood Rage' },
+            { id: 24, color: '#00bbf9', price: 2200000, nameAr: 'الجليد المتجمد', nameEn: 'Frozen Ice' },
+            { id: 25, color: '#ff006e', price: 2600000, nameAr: 'الحلم الوردي', nameEn: 'Neon Dream' },
+            { id: 26, color: '#fee440', price: 3000000, nameAr: 'النحلة القاتلة', nameEn: 'Killer Bee' },
+            { id: 27, color: '#312244', price: 3500000, nameAr: 'الثقب الدودي', nameEn: 'Wormhole' },
+            { id: 28, color: '#001219', price: 4000000, nameAr: 'عمق المحيط', nameEn: 'Deep Sea' },
+            { id: 29, color: '#9b2226', price: 4600000, nameAr: 'الرصاصة الحمراء', nameEn: 'Red Bullet' },
+            { id: 30, color: '#ae2012', price: 5200000, nameAr: 'النيران المشتعلة', nameEn: 'Blazing Fire' },
+            { id: 31, color: '#bb3e03', price: 6000000, nameAr: 'الصدأ الفولاذي', nameEn: 'Steel Rust' },
+            { id: 32, color: '#ca6702', price: 7000000, nameAr: 'العنبر القوي', nameEn: 'Power Amber' },
+            { id: 33, color: '#ee9b00', price: 8000000, nameAr: 'الدرع الذهبي', nameEn: 'Gold Shield' },
+            { id: 34, color: '#e9d8a6', price: 9000000, nameAr: 'الرمال الذهبية', nameEn: 'Golden Sand' },
+            { id: 35, color: '#94d2bd', price: 10000000, nameAr: 'الرياح الهادئة', nameEn: 'Calm Breeze' },
+            { id: 36, color: '#0a9396', price: 11000000, nameAr: 'المفترس البحري', nameEn: 'Sea Predator' },
+            { id: 37, color: '#005f73', price: 12500000, nameAr: 'الغطاس', nameEn: 'The Diver' },
+            { id: 38, color: '#001219', price: 14000000, nameAr: 'الظل الخفي', nameEn: 'Hidden Shadow' },
+            { id: 39, color: '#22223b', price: 16000000, nameAr: 'سديم الفضاء', nameEn: 'Space Nebula' },
+            { id: 40, color: '#4a4e69', price: 18000000, nameAr: 'الغيوم الرمادية', nameEn: 'Grey Clouds' },
+            { id: 41, color: '#9a8c98', price: 20000000, nameAr: 'الروح الضائعة', nameEn: 'Lost Spirit' },
+            { id: 42, color: '#c9ada7', price: 22000000, nameAr: 'الصحراء القاسية', nameEn: 'Harsh Desert' },
+            { id: 43, color: '#f2e9e4', price: 25000000, nameAr: 'الشبح الأبيض', nameEn: 'White Ghost' },
+            { id: 44, color: '#252422', price: 28000000, nameAr: 'الفحم الحجري', nameEn: 'Coal Stone' },
+            { id: 45, color: '#eb5e28', price: 32000000, nameAr: 'الشهاب الساقط', nameEn: 'Falling Meteor' },
+            { id: 46, color: '#ccc5b9', price: 36000000, nameAr: 'البلاتين الملكي', nameEn: 'Royal Platinum' },
+            { id: 47, color: '#fffcf2', price: 40000000, nameAr: 'الألماس النقي', nameEn: 'Pure Diamond' },
+            { id: 48, color: '#403d39', price: 45000000, nameAr: 'الحديد المنصهر', nameEn: 'Molten Iron' },
+            { id: 49, color: '#d00000', price: 50000000, nameAr: 'مدمر العوالم', nameEn: 'World Destroyer' },
+            { id: 50, color: '#370617', price: 55000000, nameAr: 'عنابي فخم', nameEn: 'Luxury Wine' },
+            { id: 51, color: '#6a040f', price: 60000000, nameAr: 'دماء التنين', nameEn: 'Dragon Blood' },
+            { id: 52, color: '#9d0208', price: 65000000, nameAr: 'الإمبراطور الحمراء', nameEn: 'Red Emperor' },
+            { id: 53, color: '#dc2f02', price: 70000000, nameAr: 'شمس الغروب', nameEn: 'Sunset Sun' },
+            { id: 54, color: '#e85d04', price: 75000000, nameAr: 'نمر النار', nameEn: 'Fire Tiger' },
+            { id: 55, color: '#f48c06', price: 80000000, nameAr: 'الذهب السائل', nameEn: 'Liquid Gold' },
+            { id: 56, color: '#faa307', price: 85000000, nameAr: 'المحارب الأصفر', nameEn: 'Yellow Warrior' },
+            { id: 57, color: '#ffba08', price: 90000000, nameAr: 'نور الخلود', nameEn: 'Eternal Light' },
+            { id: 58, color: '#03071e', price: 92000000, nameAr: 'نهاية الليل', nameEn: 'End of Night' },
+            { id: 59, color: '#3d5a80', price: 94000000, nameAr: 'قائد الأسطول', nameEn: 'Fleet Leader' },
+            { id: 60, color: '#98c1d9', price: 96000000, nameAr: 'سماء الحرية', nameEn: 'Sky Freedom' },
+            { id: 61, color: '#ee6c4d', price: 98000000, nameAr: 'النيزك القاتل', nameEn: 'Killer Comet' },
+            { id: 62, color: '#293241', price: 100000000, nameAr: 'الجوت', nameEn: 'Goat' }
+        ];
+
+
+        const environments = [
+            { score: 0,     grass: '#1e4620', road: '#2b2b36' },   // 1. الغابة الكلاسيكية
+            { score: 1000,  grass: '#2d5a27', road: '#333333' },   // 2. غابة عميقة
+            { score: 2500,  grass: '#c2b280', road: '#8B4513' },   // 3. الصحراء الكبرى
+            { score: 4000,  grass: '#e3d5ca', road: '#a98467' },   // 4. واحة الغروب
+            { score: 6000,  grass: '#006994', road: '#1a237e' },   // 5. شاطئ البحر
+            { score: 8000,  grass: '#0077b6', road: '#023e8a' },   // 6. أعماق المحيط
+            { score: 10000, grass: '#e0f7fa', road: '#78909c' },   // 7. منطقة ثلجية
+            { score: 12500, grass: '#ffffff', road: '#b0bec5' },   // 8. القطب المتجمد
+            { score: 15000, grass: '#3e2723', road: '#1c1c1c' },   // 9. الجبال الصخرية
+            { score: 17500, grass: '#4e342e', road: '#3e2723' },   // 10. وادي الموت
+            { score: 20000, grass: '#12005e', road: '#000000' },   // 11. الفضاء الخارجي
+            { score: 22500, grass: '#240046', road: '#10002b' },   // 12. ثقب أسود
+            { score: 25000, grass: '#4a148c', road: '#ff0055' },   // 13. نيون سايبر
+            { score: 27500, grass: '#00f5d4', road: '#00bbf9' },   // 14. مدينة المستقبل
+            { score: 30000, grass: '#880000', road: '#220000' },   // 15. بركان ثائر
+            { score: 32500, grass: '#d00000', road: '#370617' },   // 16. الجحيم الأحمر
+            { score: 35000, grass: '#38b000', road: '#004b23' },   // 17. غابة سامة (Toxic)
+            { score: 37500, grass: '#ccff33', road: '#38b000' },   // 18. منطقة إشعاعية
+            { score: 40000, grass: '#ffb703', road: '#fb5607' },   // 19. كوكب المريخ
+            { score: 42500, grass: '#ff0054', road: '#800f2f' },   // 20. البعد الوردي
+            { score: 45000, grass: '#FFD700', road: '#5e503f' },   // 21. مدينة الذهب
+            { score: 47500, grass: '#ffffff', road: '#000000' },   // 22. أبيض وأسود (Retro)
+            { score: 50000, grass: '#22223b', road: '#4a4e69' },   // 23. ضباب ليلي
+            { score: 55000, grass: '#b7e4c7', road: '#2d6a4f' },   // 24. حديقة الأساطير
+            { score: 60000, grass: '#000000', road: '#ffd700' },    // 25. طريق الملوك
+            { score: 65000, grass: '#480ca8', road: '#4cc9f0' },   // 26. مدينة النيون البنفسجية
+            { score: 70000, grass: '#2d6a4f', road: '#081c15' },   // 27. الأدغال المظلمة
+            { score: 75000, grass: '#ff006e', road: '#3a0ca3' },   // 28. عالم الخيال
+            { score: 80000, grass: '#000000', road: '#ffffff' },   // 29. البعد المعكوس
+            { score: 90000, grass: '#ff4d00', road: '#2b2b2b' },   // 30. كوكب الحمم
+            { score: 100000, grass: '#b5e48c', road: '#1e6091' }   // 31. نهاية الطريق (الأسطوري)
+        ];
+
+        let currentEnvIndex = 0;
+        let currentGrassColor = environments[0].grass;
+        let currentRoadColor = environments[0].road;
+        let envTransitionFactor = 1;
+
+        function hexToRgb(hex) {
+            let c = hex.substring(1).split('');
+            if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+            c = '0x' + c.join('');
+            return { r: (c >> 16) & 255, g: (c >> 8) & 255, b: c & 255 };
+        }
+
+        function lerpColor(c1, c2, factor) {
+            let rgb1 = hexToRgb(c1);
+            let rgb2 = hexToRgb(c2);
+            let r = Math.round(rgb1.r + factor * (rgb2.r - rgb1.r));
+            let g = Math.round(rgb1.g + factor * (rgb2.g - rgb1.g));
+            let b = Math.round(rgb1.b + factor * (rgb2.b - rgb1.b));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+
+        const upgradeData = {
+            magnet: { maxLevel: 5, basePrice: 300, priceMulti: 1.5, icon: '🧲' },
+            shield: { maxLevel: 5, basePrice: 300, priceMulti: 1.5, icon: '🛡️' },
+            multiplier: { maxLevel: 3, basePrice: 1000, priceMulti: 2.5, icon: '🤑' }
+        };
+
+
+
+        function saveProgress() {
+            localStorage.setItem('hw_coins', totalSavedCoins);
+            localStorage.setItem('hw_highscore', savedHighScore);
+            localStorage.setItem('hw_unlocked', JSON.stringify(unlockedCars));
+            localStorage.setItem('hw_last_claim', lastClaimDate);
+            localStorage.setItem('hw_streak', currentStreak);
+            localStorage.setItem('hw_selected_car', selectedCarIndex);
+            localStorage.setItem('hw_missions', JSON.stringify(missions));
+            localStorage.setItem('hw_upgrades', JSON.stringify(upgradeLevels));
+
+            // السطر السحري اللي كان ناقص عشان يرفع البيانات للترتيب العالمي
+            if (window.syncToFirebase) {
+                window.syncToFirebase(savedHighScore, totalSavedCoins, unlockedCars.length);
+            }
+        }
+
+        function resetAllData() {
+            if(confirm(texts[currentLang].confirmReset)) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function updateGlobalCoins() { 
+            document.getElementById('global-coins').innerText = totalSavedCoins; 
+        }
+
+        function scrollShop(containerId, direction) {
+            const container = document.getElementById(containerId);
+            const scrollAmount = 150; // مقدار السحب
+            container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+        }
+
+        function renderShop() {
+            updateGlobalCoins();
+            
+            // قراءة قيم السيرش
+            const carQuery = document.getElementById('search-cars').value.toLowerCase();
+            const roadQuery = document.getElementById('search-roads') ? document.getElementById('search-roads').value.toLowerCase() : "";
+            const upgQuery = document.getElementById('search-upgrades').value.toLowerCase();
+
+            // Render Cars
+            const garage = document.getElementById('garage');
+            garage.innerHTML = '';
+            cars.forEach((car, index) => {
+                const carName = currentLang === 'ar' ? car.nameAr : car.nameEn;
+                if (!carName.toLowerCase().includes(carQuery)) return; // فلترة السيرش
+
+                const isUnlocked = unlockedCars.includes(index);
+                const isSelected = index === selectedCarIndex;
+                const card = document.createElement('div');
+                card.className = `item-card ${isSelected ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}`;
+                card.style.minWidth = "110px"; // عشان السلايدر
+                let btnText = isSelected ? texts[currentLang].selected : (isUnlocked ? texts[currentLang].select : `${texts[currentLang].buy} 💰${car.price}`);
+                
+                card.onclick = () => {
+                    initAudio();
+                    if (isUnlocked) { selectedCarIndex = index; saveProgress(); renderShop(); drawEnvironment(); drawCar(player.x, player.y, player.width, player.height, cars[selectedCarIndex].color, true, 0);} 
+                    else if (totalSavedCoins >= car.price) {
+                        totalSavedCoins -= car.price; unlockedCars.push(index); selectedCarIndex = index; playSound('buy');
+                        saveProgress(); renderShop(); updateUI(); drawEnvironment(); drawCar(player.x, player.y, player.width, player.height, cars[selectedCarIndex].color, true, 0);
+                    } else { alert(texts[currentLang].notEnough); }
+                };
+                card.innerHTML = `
+                    <div class="car-preview" style="background-color: ${car.color};"></div>
+                    ${!isUnlocked ? '<div class="lock-icon">🔒</div>' : ''}
+                    <span class="item-name">${carName}</span>
+                    <span class="item-price" style="color: ${isSelected ? '#38b000' : 'var(--gold)'}">${btnText}</span>
+                `;
+                garage.appendChild(card);
+            });
+
+
+            // Render Upgrades
+            const upgradesDiv = document.getElementById('upgrades');
+            upgradesDiv.innerHTML = '';
+            ['magnet', 'shield', 'multiplier'].forEach(type => {
+                const level = upgradeLevels[type];
+                const data = upgradeData[type];
+                let title = '';
+                if(type === 'magnet') title = texts[currentLang].upgMagnet;
+                if(type === 'shield') title = texts[currentLang].upgShield;
+                if(type === 'multiplier') title = texts[currentLang].upgMulti;
+
+                if (!title.toLowerCase().includes(upgQuery)) return; // فلترة التطويرات
+
+                const isMax = level >= data.maxLevel;
+                const nextPrice = Math.floor(data.basePrice * Math.pow(data.priceMulti, level));
+                
+                const card = document.createElement('div');
+                card.className = `item-card ${isMax ? 'maxed' : ''}`;
+                
+                let dotsHtml = '';
+                for(let i=0; i<data.maxLevel; i++) {
+                    dotsHtml += `<div class="dot ${i < level ? 'filled' : ''}"></div>`;
+                }
+
+                card.onclick = () => {
+                    initAudio();
+                    if (!isMax && totalSavedCoins >= nextPrice) {
+                        totalSavedCoins -= nextPrice; upgradeLevels[type]++; playSound('buy');
+                        saveProgress(); renderShop(); updateUI();
+                    } else if (!isMax) { alert(texts[currentLang].notEnough); }
+                };
+
+                let btnText = isMax ? texts[currentLang].maxLevel : ` 💰${nextPrice}`;
+                card.innerHTML = `
+                    <div class="upgrade-icon">${data.icon}</div>
+                    <span class="item-name">${title}</span>
+                    <div class="level-dots">${dotsHtml}</div>
+                    <span class="item-price" style="color: ${isMax ? '#38b000' : 'var(--gold)'}">${btnText}</span>
+                `;
+                upgradesDiv.appendChild(card);
+            });
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            localStorage.setItem('hw_lang', currentLang);
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            document.documentElement.lang = currentLang; document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            
+            document.getElementById('title-text').innerText = texts[currentLang].title;
+            document.getElementById('header-lang-btn').innerText = texts[currentLang].langBtn;
+            document.getElementById('mission-btn').innerText = texts[currentLang].missionBtn;
+            document.getElementById('ready-text').innerText = texts[currentLang].ready;
+            document.getElementById('instruction-text').innerText = texts[currentLang].instruction;
+            document.getElementById('start-btn').innerText = texts[currentLang].start;
+            document.getElementById('score-text').innerHTML = `${texts[currentLang].score} <span id="score" style="color:var(--gold)">0</span>`;
+            document.getElementById('crash-text').innerText = texts[currentLang].crash;
+            document.getElementById('restart-btn').innerText = texts[currentLang].restart;
+            document.getElementById('pause-text').innerText = texts[currentLang].pause;
+            document.getElementById('resume-btn').innerText = texts[currentLang].resume;
+            document.getElementById('mission-title-text').innerText = texts[currentLang].missionTitle;
+            document.getElementById('close-mission-btn').innerText = texts[currentLang].close;
+            document.getElementById('shop-title-text').innerText = texts[currentLang].shopTitle;
+            document.getElementById('shop-cars-title').innerText = texts[currentLang].shopCars;
+            document.getElementById('shop-upgrades-title').innerText = texts[currentLang].shopUpgrades;
+            if(document.querySelector('#nav-daily .nav-text')) document.querySelector('#nav-daily .nav-text').innerText = texts[currentLang].navDaily;
+            if(document.getElementById('daily-title-text')) document.getElementById('daily-title-text').innerText = texts[currentLang].dailyTitle;
+            if(document.getElementById('daily-desc')) document.getElementById('daily-desc').innerText = texts[currentLang].dailyDesc;
+            
+            checkDailyReward(); // عشان يحدث الزرار حسب اللغة
+            
+            // Nav & Settings & About
+            document.querySelector('#nav-play .nav-text').innerText = texts[currentLang].navPlay;
+            document.querySelector('#nav-shop .nav-text').innerText = texts[currentLang].navShop;
+            document.querySelector('#nav-settings .nav-text').innerText = texts[currentLang].navSettings;
+            document.querySelector('#nav-about .nav-text').innerText = texts[currentLang].navAbout;
+            
+            document.getElementById('settings-title').innerText = texts[currentLang].settingsTitle;
+            document.getElementById('lbl-sound').innerText = texts[currentLang].lblSound;
+            document.getElementById('lbl-music').innerText = texts[currentLang].lblMusic;
+            document.getElementById('lbl-lang').innerText = texts[currentLang].lblLang;
+            document.getElementById('btn-reset-data').innerText = texts[currentLang].btnReset;
+            document.getElementById('dev-subtitle').innerText = texts[currentLang].devSub;
+            document.getElementById('portfolio-btn').innerText = texts[currentLang].portBtn;
+
+            updateSettingsUI();
+            renderShop(); renderMissions();
+        }
+
+        // --- Game Engine ---
+        const canvas = document.getElementById("gameCanvas"); const ctx = canvas.getContext("2d");
+        let animationId; let isGameRunning = false; let isPaused = false; let score = 0; let sessionCoins = 0;
+        let gameSpeed = 6; let frameCount = 0; let roadOffset = 0;
+        const roadWidth = canvas.width * 0.8; const grassWidth = (canvas.width - roadWidth) / 2; const laneWidth = roadWidth / 4;
+        const player = { lane: 1, targetX: 0, x: 0, width: 44, height: 75, y: canvas.height - 110, tilt: 0 };
+        let entities = []; let particles = [];  let powerups = { shield: 0, magnet: 0 };
+        let nextAmbulanceScore = 3000; let ambulanceWarningLane = -1; let ambulanceWarningTimer = 0; let isAmbulanceActive = false;
+        let warningBuffer = null;
+
+        let touchStartX = 0;
+        canvas.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchend', (e) => { handleSwipe(touchStartX, e.changedTouches[0].screenX); e.preventDefault(); }, {passive: false});
+        let mouseDownX = 0;
+        canvas.addEventListener('mousedown', e => mouseDownX = e.clientX);
+        canvas.addEventListener('mouseup', e => handleSwipe(mouseDownX, e.clientX));
+
+        function handleSwipe(start, end) {
+            if (!isGameRunning || isPaused) return; const threshold = 30;
+            if (end < start - threshold && player.lane > 0) player.lane--;
+            if (end > start + threshold && player.lane < 3) player.lane++; // هنا غيرنا لـ 3
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!isGameRunning || isPaused) return;
+            if ((e.key === 'ArrowLeft' || e.key === 'a') && player.lane > 0) player.lane--;
+            if ((e.key === 'ArrowRight' || e.key === 'd') && player.lane < 3) player.lane++; // وهنا كمان
+        });
+
+        function startGame() {
+            initAudio(); 
+            if(musicEnabled) bgMusic.play().catch(e => console.log("Audio play blocked", e));
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            document.getElementById('game-section').classList.remove('shake');
+            resetGameParams(); isGameRunning = true; isPaused = false; gameLoop();
+        }
+
+        function togglePause() {
+            if(!isGameRunning) return; isPaused = !isPaused;
+            document.getElementById('pause-screen').style.display = isPaused ? 'flex' : 'none';
+            if(isPaused) {
+                bgMusic.pause(); 
+            } else {
+                if(musicEnabled) bgMusic.play();  
+                gameLoop();
+            }
+        }
+
+        function toggleFullScreen() {
+            const gameSection = document.getElementById('game-section');
+            const fsBtn = document.getElementById('fs-btn');
+            
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // الدخول في وضع ملء الشاشة
+                if (gameSection.requestFullscreen) {
+                    gameSection.requestFullscreen();
+                } else if (gameSection.webkitRequestFullscreen) { /* Safari/iOS */
+                    gameSection.webkitRequestFullscreen();
+                }
+                fsBtn.innerText = '✖'; // تغيير الأيقونة للرجوع
+            } else {
+                // الخروج من وضع ملء الشاشة
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari/iOS */
+                    document.webkitExitFullscreen();
+                }
+                fsBtn.innerText = '🔲'; // إرجاع الأيقونة الأصلية
+            }
+        }
+
+        function resetGameParams() {
+            currentEnvIndex = 0;
+            currentGrassColor = environments[0].grass;
+            currentRoadColor = environments[0].road;
+            envTransitionFactor = 1;
+            score = 0; sessionCoins = 0; gameSpeed = 6; frameCount = 0; player.lane = 1;
+            player.x = grassWidth + (1 * laneWidth) + (laneWidth / 2) - (player.width / 2); player.targetX = player.x; player.tilt = 0;
+            entities = []; particles = []; powerups = { shield: 0, magnet: 0 };
+            document.getElementById('shield-icon').classList.remove('active'); document.getElementById('magnet-icon').classList.remove('active');
+            updateUI();
+        }
+        function resetGame() { startGame(); }
+
+        function updateUI() {
+            document.getElementById('score').innerText = Math.floor(score);
+            document.getElementById('highscore').innerText = savedHighScore;
+            document.getElementById('final-score').innerText = Math.floor(score);
+            document.getElementById('final-coins').innerText = sessionCoins;
+            updateGlobalCoins();
+        }
+
+        function spawnParticles(x, y, color, amount, speedMulti = 1) {
+            for(let i = 0; i < amount; i++) {
+                particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMulti, vy: (Math.random() - 0.5) * 8 * speedMulti, life: 1.0, color: color, size: Math.random() * 4 + 2 });
+            }
+        }
+
+
+
+        function spawnEntity() {
+            const lane = Math.floor(Math.random() * 4); const rand = Math.random();
+            let type, color, width=44, height=75, speedMod=0, isPolice = false;
+
+            if (rand < 0.02) { type = 'shield'; width = 30; height = 30; color = '#4cc9f0'; } 
+            else if (rand < 0.04) { type = 'magnet'; width = 30; height = 30; color = '#ff3366'; } 
+            else if (rand < 0.45) { type = 'coin'; width = 30; height = 30; color = '#FFD700'; } 
+            else { 
+                const isTruck = Math.random() < 0.2; 
+                type = isTruck ? 'truck' : 'enemy'; 
+                if(isTruck) {
+                    color = ['#555', '#8B4513', '#2F4F4F'][Math.floor(Math.random()*3)]; 
+                    height = 120; // عربية النقل أطول
+                    speedMod = Math.random() * 1 + 0.5; // النقل أبطأ
+                    isPolice = false;
+                } else {
+                    const enemyCar = cars[Math.floor(Math.random() * cars.length)];
+                    color = enemyCar.color; 
+                    isPolice = enemyCar.id === 6; 
+                    speedMod = Math.random() * 2 + 0.5; 
+                }
+            }
+
+            const targetX = grassWidth + (lane * laneWidth) + (laneWidth / 2) - (width / 2);
+            entities.push({ lane, x: targetX, y: -100, width, height, type, color, speedMod, isPolice });
+        }
+
+        function drawEnvironment() {
+            ctx.fillStyle = currentGrassColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = currentRoadColor; ctx.fillRect(grassWidth, 0, roadWidth, canvas.height);
+            let borderOffset = roadOffset % 40;
+            for(let i = -40; i < canvas.height; i += 40) {
+                ctx.fillStyle = '#ff3333'; ctx.fillRect(grassWidth, i + borderOffset, 6, 20); ctx.fillRect(canvas.width - grassWidth - 6, i + borderOffset, 6, 20);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(grassWidth, i + borderOffset + 20, 6, 20); ctx.fillRect(canvas.width - grassWidth - 6, i + borderOffset + 20, 6, 20);
+            }
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.setLineDash([30, 30]);
+            roadOffset += gameSpeed; if (roadOffset > 60) roadOffset = 0; ctx.lineDashOffset = -roadOffset;
+            ctx.beginPath(); 
+            ctx.moveTo(grassWidth + laneWidth, 0); ctx.lineTo(grassWidth + laneWidth, canvas.height);
+            ctx.moveTo(grassWidth + laneWidth * 2, 0); ctx.lineTo(grassWidth + laneWidth * 2, canvas.height); 
+            ctx.moveTo(grassWidth + laneWidth * 3, 0); ctx.lineTo(grassWidth + laneWidth * 3, canvas.height); 
+            ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        function drawCar(x, y, w, h, color, isPlayer, tilt = 0, isPolice = false) {
+            ctx.save(); ctx.translate(x + w/2, y + h/2); ctx.rotate(tilt * Math.PI / 180); ctx.translate(-(x + w/2), -(y + h/2));
+            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.roundRect(x + 5, y + 5, w, h, 8); ctx.fill();
+            ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill();
+
+            if (isPlayer) {
+                const lightGrad = ctx.createLinearGradient(x + w/2, y, x + w/2, y - 120);
+                lightGrad.addColorStop(0, 'rgba(255, 255, 200, 0.3)');
+                lightGrad.addColorStop(1, 'rgba(255, 255, 200, 0)');
+                ctx.fillStyle = lightGrad;
+                // كشاف يمين
+                ctx.beginPath(); ctx.moveTo(x + 10, y); ctx.lineTo(x - 20, y - 120); ctx.lineTo(x + 30, y - 120); ctx.fill();
+                // كشاف شمال
+                ctx.beginPath(); ctx.moveTo(x + w - 10, y); ctx.lineTo(x + w - 30, y - 120); ctx.lineTo(x + w + 20, y - 120); ctx.fill();
+            }
+            
+            // Windshield
+            ctx.fillStyle = "#111"; ctx.beginPath(); ctx.roundRect(x + 6, y + 15, w - 12, h - 30, 4); ctx.fill();
+            ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x + 8, y + 22, w - 16, h - 44, 2); ctx.fill();
+
+            // Police sirine
+            if(isPolice || (isPlayer && selectedCarIndex === 6)) {
+                ctx.fillStyle = frameCount % 20 < 10 ? '#ff0000' : '#0000ff';
+                ctx.fillRect(x + w/2 - 8, y + h/2 - 4, 16, 8);
+            }
+
+            const headY = isPlayer ? y + 4 : y + h - 8; const tailY = isPlayer ? y + h - 6 : y + 2;
+            ctx.fillStyle = isPlayer ? "#ffffcc" : "#ff0000"; 
+            ctx.beginPath(); ctx.arc(x + 8, headY, 3, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(x + w - 8, headY, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = isPlayer ? "#ff0000" : "#ffffcc"; 
+            ctx.beginPath(); ctx.arc(x + 8, tailY, 3, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(x + w - 8, tailY, 3, 0, Math.PI * 2); ctx.fill();
+
+            if (isPlayer && powerups.shield > 0) {
+                ctx.strokeStyle = "rgba(76, 201, 240, 0.8)"; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.roundRect(x - 5, y - 5, w + 10, h + 10, 15); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawItems() {
+            for (let i = entities.length - 1; i >= 0; i--) {
+                let ent = entities[i];
+                if (ent.type === 'coin' || ent.type === 'shield' || ent.type === 'magnet') {
+                    ent.y += gameSpeed;
+                    if (powerups.magnet > 0 && ent.type === 'coin') {
+                        const dx = (player.x + player.width/2) - (ent.x + ent.width/2); const dy = (player.y + player.height/2) - (ent.y + ent.height/2);
+                        if (Math.sqrt(dx*dx + dy*dy) < 200) { ent.x += dx * 0.1; ent.y += dy * 0.1; }
+                    }
+                    ctx.save(); ctx.translate(ent.x + ent.width/2, ent.y + ent.height/2); ctx.rotate(frameCount * 0.05); ctx.translate(-(ent.x + ent.width/2), -(ent.y + ent.height/2));
+                    ctx.fillStyle = ent.color; ctx.beginPath(); ctx.arc(ent.x + ent.width/2, ent.y + ent.height/2, ent.width/2, 0, Math.PI * 2); ctx.fill();
+                    if (ent.type === 'coin') { ctx.fillStyle = '#b39700'; ctx.beginPath(); ctx.arc(ent.x + ent.width/2, ent.y + ent.height/2, ent.width/4, 0, Math.PI * 2); ctx.fill(); } 
+                    else if (ent.type === 'shield') { ctx.fillStyle = '#fff'; ctx.font = "16px Arial"; ctx.fillText("🛡", ent.x + 6, ent.y + 20); } 
+                    else if (ent.type === 'magnet') { ctx.fillStyle = '#fff'; ctx.font = "16px Arial"; ctx.fillText("🧲", ent.x + 6, ent.y + 20); }
+                    ctx.restore();
+                } else {
+                    ent.y += (gameSpeed - ent.speedMod); 
+                    drawCar(ent.x, ent.y, ent.width, ent.height, ent.color, false, 0, ent.isPolice);
+                    
+                    // رسم تفاصيل النقل والإسعاف
+                    if (ent.type === 'truck') {
+                        ctx.fillStyle = '#111'; 
+                        ctx.fillRect(ent.x + 5, ent.y + 35, ent.width - 10, 5);
+                    } else if (ent.type === 'ambulance') {
+                        // صليب أحمر للإسعاف
+                        ctx.fillStyle = 'red';
+                        ctx.fillRect(ent.x + ent.width/2 - 4, ent.y + ent.height/2 + 5, 8, 20);
+                        ctx.fillRect(ent.x + ent.width/2 - 10, ent.y + ent.height/2 + 11, 20, 8);
+                        
+                        if (ent.y < -150) isAmbulanceActive = false; 
+                    }
+                }
+
+                if (ent.y > canvas.height) { entities.splice(i, 1); continue; }
+                const m = 5; 
+                if (player.x + m < ent.x + ent.width - m && player.x + player.width - m > ent.x + m && player.y + m < ent.y + ent.height - m && player.y + player.height - m > ent.y + m) {
+                    if (ent.type === 'coin') {
+                        playSound('coin'); 
+                        if (navigator.vibrate) navigator.vibrate(10); // هزة خفيفة جداً
+                        let coinValue = 1 + upgradeLevels.multiplier; 
+                        sessionCoins += coinValue; score += 10; totalSavedCoins += coinValue; entities.splice(i, 1); updateUI();
+                    } else if (ent.type === 'shield') {
+                        playSound('powerup'); 
+                        if (navigator.vibrate) navigator.vibrate([20, 30, 20]); // هزتين سريعين
+                        let shieldTime = 600 + (upgradeLevels.shield * 150); 
+                        powerups.shield = shieldTime; document.getElementById('shield-icon').classList.add('active'); entities.splice(i, 1);
+                    } else if (ent.type === 'magnet') {
+                        playSound('powerup'); 
+                        let magnetTime = 600 + (upgradeLevels.magnet * 150); 
+                        powerups.magnet = magnetTime; document.getElementById('magnet-icon').classList.add('active'); entities.splice(i, 1);
+                    } else if (ent.type === 'enemy' || ent.type === 'truck' || ent.type === 'ambulance') {
+                        if (powerups.shield > 0) {
+                            playSound('crash'); spawnParticles(ent.x + 22, ent.y + 35, '#ff7700', 30, 2); spawnParticles(ent.x + 22, ent.y + 35, '#555', 20, 1.5);
+                            entities.splice(i, 1); score += 50; powerups.shield = 0; document.getElementById('shield-icon').classList.remove('active');
+                        } else { gameOver(); }
+                    }
+                }
+            }
+        }
+
+        function drawPlayerParticles() {
+            for(let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03;
+                ctx.globalAlpha = Math.max(0, p.life); 
+                ctx.fillStyle = p.color; 
+                ctx.beginPath(); 
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); 
+                ctx.fill(); 
+                ctx.globalAlpha = 1.0;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function updatePlayerMovement() {
+            player.targetX = grassWidth + (player.lane * laneWidth) + (laneWidth / 2) - (player.width / 2);
+            const diffX = player.targetX - player.x; player.x += diffX * 0.15; player.tilt = diffX * 0.4;
+        }
+
+        function checkMissions() {
+            missions.forEach(m => {
+                if (!m.done) {
+                    if ((m.type === 'coins' && sessionCoins >= m.target) || (m.type === 'score' && score >= m.target)) {
+                        m.done = true; totalSavedCoins += m.reward;
+                    }
+                }
+            });
+        }
+
+        function gameOver() {
+            if (navigator.vibrate) navigator.vibrate(200); // هزة قوية للتنبيه بالخسارة
+            try { bgMusic.pause(); bgMusic.currentTime = 0; } catch(e) {} 
+            playSound('crash'); isGameRunning = false; checkMissions();
+            if (Math.floor(score) > savedHighScore) savedHighScore = Math.floor(score);
+            saveProgress(); updateUI(); renderShop();
+            const container = document.getElementById('game-section');
+
+            container.classList.remove('shake'); void container.offsetWidth; container.classList.add('shake');
+            spawnParticles(player.x + 22, player.y + 35, '#ff3333', 50, 3); drawPlayerParticles();
+            setTimeout(() => { document.getElementById('game-over-screen').style.display = 'flex'; }, 500);
+        }
+
+        function gameLoop() {
+            if (!isGameRunning || isPaused) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawEnvironment(); updatePlayerMovement(); drawItems();
+            drawCar(player.x, player.y, player.width, player.height, cars[selectedCarIndex].color, true, player.tilt);
+            drawPlayerParticles();
+            frameCount++; 
+            let spawnRate = Math.max(15, 60 - Math.floor(gameSpeed * 2)); if (frameCount % spawnRate === 0) spawnEntity();
+            if (powerups.shield > 0) { powerups.shield--; if(powerups.shield <= 0) document.getElementById('shield-icon').classList.remove('active'); }
+            if (powerups.magnet > 0) { powerups.magnet--; if(powerups.magnet <= 0) document.getElementById('magnet-icon').classList.remove('active'); }
+            score += 0.15; if (score % 100 < 0.15 && gameSpeed < 18) gameSpeed += 0.4;
+
+            if (currentEnvIndex < environments.length - 1 && score >= environments[currentEnvIndex + 1].score) {
+                currentEnvIndex++;
+                envTransitionFactor = 0;
+            }
+
+            if (envTransitionFactor < 1) {
+                envTransitionFactor += 0.002;
+                if (envTransitionFactor > 1) envTransitionFactor = 1;
+
+                let prevEnv = environments[currentEnvIndex - 1];
+                let nextEnv = environments[currentEnvIndex];
+
+                currentGrassColor = lerpColor(prevEnv.grass, nextEnv.grass, envTransitionFactor);
+                currentRoadColor = lerpColor(prevEnv.road, nextEnv.road, envTransitionFactor);
+            }
+            if (score >= nextAmbulanceScore && !isAmbulanceActive && ambulanceWarningTimer === 0) {
+                ambulanceWarningLane = Math.floor(Math.random() * 4); // بتختار حارة عشوائية
+                ambulanceWarningTimer = 180; // 3 ثواني تحذير (باعتبار 60 فريم في الثانية)
+                playWarningSequence(); // تشغيل الصوت المتقطع
+            }
+
+            if (ambulanceWarningTimer > 0) {
+                ambulanceWarningTimer--;
+                
+                if (frameCount % 20 < 10) {
+                    // 1. الفلاش الأحمر الخفيف في الحارة كلها
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                    ctx.fillRect(grassWidth + (ambulanceWarningLane * laneWidth), 0, laneWidth, canvas.height);
+
+                    // 2. حساب مكان السهم (في نص الحارة من تحت)
+                    let arrowX = grassWidth + (ambulanceWarningLane * laneWidth) + (laneWidth / 2);
+                    let arrowY = canvas.height - 80;
+
+                    // 3. رسم رأس السهم (مثلث باصص لفوق)
+                    ctx.fillStyle = '#FFD700'; // أصفر دهبي عشان يليق مع اللعبة
+                    ctx.beginPath();
+                    ctx.moveTo(arrowX, arrowY - 30); // قمة السهم
+                    ctx.lineTo(arrowX - 25, arrowY + 5);  // يمين
+                    ctx.lineTo(arrowX + 25, arrowY + 5);  // شمال
+                    ctx.fill();
+                    
+                    // 4. رسم ديل السهم
+                    ctx.fillRect(arrowX - 10, arrowY + 5, 20, 30);
+
+                    // 5. رسم علامة تعجب حمرا جوه السهم للتحذير
+                    ctx.fillStyle = '#FF0000'; // أحمر
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('!', arrowX, arrowY + 30);
+                }
+
+                // لما التحذير يخلص، الإسعاف تنطلق من تحت
+                if (ambulanceWarningTimer === 0) {
+                    const targetX = grassWidth + (ambulanceWarningLane * laneWidth) + (laneWidth / 2) - (44 / 2);
+                    entities.push({ 
+                        lane: ambulanceWarningLane, x: targetX, y: canvas.height + 50, // بتبدأ من تحت الشاشة
+                        width: 44, height: 85, type: 'ambulance', color: '#ffffff', 
+                        speedMod: gameSpeed + 18, // سرعة صاروخية جاية من ورا
+                        isPolice: true // عشان تشغل كشافات البوليس (النور الأزرق والأحمر)
+                    });
+                    isAmbulanceActive = true;
+                    nextAmbulanceScore += 3000; 
+                    ambulanceWarningLane = -1;
+                }
+            }
+            if (frameCount % 10 === 0) updateUI();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function showMissions() { document.getElementById('mission-screen').style.display = 'flex'; renderMissions(); }
+        function hideMissions() { document.getElementById('mission-screen').style.display = 'none'; }
+        function renderMissions() {
+            const list = document.getElementById('missions-list'); list.innerHTML = '';
+            missions.forEach(m => {
+                const title = currentLang === 'ar' ? m.ar : m.en; const rewardTxt = texts[currentLang].reward;
+                const statusTxt = m.done ? texts[currentLang].done : `💰 ${m.reward}`;
+                list.innerHTML += `
+                    <div class="mission-item ${m.done ? 'done' : ''}" dir="${currentLang === 'ar' ? 'rtl' : 'ltr'}">
+                        <div class="mission-title">${title}</div><div class="mission-reward">${m.done ? statusTxt : rewardTxt + ' ' + statusTxt}</div>
+                    </div>`;
+            });
+        }
+
+// --- Daily Rewards System ---
+        function checkDailyReward() {
+            const today = new Date().toDateString();
+            const yesterday = new Date(Date.now() - 86400000).toDateString();
+            const claimBtn = document.getElementById('claim-btn');
+            const timerDisplay = document.getElementById('claim-timer');
+            const rewardAmount = document.getElementById('reward-amount');
+
+            if (lastClaimDate === today) {
+                // استلم خلاص النهاردة
+                claimBtn.disabled = true;
+                claimBtn.classList.add('claim-btn-disabled');
+                claimBtn.innerText = currentLang === 'ar' ? "تم الاستلام ✅" : "Claimed ✅";
+                timerDisplay.style.display = 'block';
+                timerDisplay.innerText = currentLang === 'ar' ? "تعالى بكرة يابا!" : "Come back tomorrow!";
+            } else {
+                // لسه مستلمش النهاردة.. نشيك على الـ Streak
+                if (lastClaimDate !== yesterday && lastClaimDate !== "") {
+                    // فوت يوم! الاستريك باظ ورجع زي الزفت
+                    currentStreak = 0;
+                }
+                
+                claimBtn.disabled = false;
+                claimBtn.classList.remove('claim-btn-disabled');
+                claimBtn.innerText = currentLang === 'ar' ? "استلام المكافأة " : "Claim Reward ";
+                timerDisplay.style.display = 'none';
+            }
+
+            // حساب المكافأة بناءً على الاستريك
+            let calcStreak = Math.min(currentStreak, dailyConfig.maxStreak);
+            let todayReward = dailyConfig.baseReward + (calcStreak * dailyConfig.streakBonus);
+            
+            document.getElementById('current-streak').innerText = currentStreak;
+            rewardAmount.innerText = `+${todayReward}`;
+        }
+
+        function claimDailyReward() {
+            const today = new Date().toDateString();
+            if (lastClaimDate === today) return; // حماية إضافية
+
+            initAudio();
+            playSound('buy'); // صوت لذيذ عند الاستلام
+
+            // حساب المكافأة
+            let calcStreak = Math.min(currentStreak, dailyConfig.maxStreak);
+            let reward = dailyConfig.baseReward + (calcStreak * dailyConfig.streakBonus);
+
+            // إضافة الفلوس
+            totalSavedCoins += reward;
+            
+            // تحديث الاستريك والتاريخ
+            currentStreak++;
+            lastClaimDate = today;
+
+            // حفظ وتحديث الواجهة
+            saveProgress();
+            updateGlobalCoins();
+            checkDailyReward();
+
+            // تأثير بصري
+            const rewardBox = document.getElementById('daily-reward-box');
+            rewardBox.classList.remove('shake');
+            void rewardBox.offsetWidth; // Trigger reflow
+            rewardBox.classList.add('shake');
+        }
+
+        // Init App
+        applyLanguage(); 
+        updateGlobalCoins();
+        drawEnvironment();
+        player.x = grassWidth + (1 * laneWidth) + (laneWidth / 2) - (player.width / 2);
+        drawCar(player.x, player.y, player.width, player.height, cars[selectedCarIndex].color, true, 0);
+        checkDailyReward();
+    </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, get, update, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBWfF2YHd8GWg5iUMlKFxnYzANLt6MSb9k",
             authDomain: "eto-host.firebaseapp.com",
             databaseURL: "https://eto-host-default-rtdb.firebaseio.com",
-            projectId: "eto-host"
+            projectId: "eto-host",
+            storageBucket: "eto-host.firebasestorage.app",
+            messagingSenderId: "722707070554",
+            appId: "1:722707070554:web:c556e865af6c4a6d822263",
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let userId = localStorage.getItem('etoify_user');
-        if(!userId) {
-            userId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('etoify_user', userId);
-        }
+        // سحب بيانات المستخدم من التسجيل اللي حصل في شاشة التحميل
+        const uid = localStorage.getItem('game_uid');
+        const username = localStorage.getItem('game_username');
 
-        let likedSongsDb = {};
-        let currentSong = null;
-        let isPlaying = false;
-        let currentLang = 'ar';
-        const audioPlayer = document.getElementById('realAudioPlayer');
-
-        // قائمة سيرفرات للـ Fallback عشان الـ CORS Error بتاع جيت هب
-        const PIPED_APIS = [
-            "https://pipedapi.kavin.rocks",
-            "https://pipedapi.smnz.de",
-            "https://piped-api.garudalinux.org"
-        ];
-
-        // دالة لجلب البيانات وتجربة كذا سيرفر لو الأول رفض
-        async function fetchWithFallback(endpoint) {
-            let lastError;
-            for (const apiBase of PIPED_APIS) {
-                try {
-                    const res = await fetch(`${apiBase}${endpoint}`);
-                    if (res.ok) return await res.json();
-                } catch (err) {
-                    console.warn(`Server ${apiBase} failed. Trying next...`);
-                    lastError = err;
-                }
-            }
-            throw lastError || new Error("All API servers failed");
-        }
-
-        const translations = {
-            ar: {
-                home: "الرئيسية", search: "بحث", liked: "المفضلة", lyrics: "الكلمات", settings: "الإعدادات",
-                home_title: "الرئيسية", search_title: "ابحث في يوتيوب", liked_title: "الأغاني المفضلة", lyrics_title: "كلمات الأغنية", settings_title: "الإعدادات",
-                home_desc: "استمع لأغانيك المفضلة من يوتيوب مباشرة!", changeName: "تغيير الاسم", changePic: "تغيير الصورة",
-                search_placeholder: "ابحث عن أغنية أو فنان...", search_btn: "ابحث",
-                ready: "جاهز للتشغيل", select_song: "اختر أغنية", no_liked: "لا توجد أغاني في المفضلة حتى الآن.",
-                lang_label: "اللغة / Language", play: "تشغيل", loading: "جاري التحميل...", 
-                prof_settings: "إعدادات الحساب / Account Settings", enter_name: "أدخل اسمك الجديد:",
-                lyrics_empty: "شغّل أغنية عشان تشوف الكلمات هنا..."
-            },
-            en: {
-                home: "Home", search: "Search", liked: "Liked", lyrics: "Lyrics", settings: "Settings",
-                home_title: "Home", search_title: "Search YouTube", liked_title: "Liked Songs", lyrics_title: "Song Lyrics", settings_title: "Settings",
-                home_desc: "Listen to your favorite songs directly from YouTube!", changeName: "Change Name", changePic: "Change Picture",
-                search_placeholder: "Search for a song or artist...", search_btn: "Search",
-                ready: "Ready to play", select_song: "Select a song", no_liked: "No liked songs yet.",
-                lang_label: "Language / اللغة", play: "Play", loading: "Loading...", 
-                prof_settings: "Account Settings / إعدادات الحساب", enter_name: "Enter your new name:",
-                lyrics_empty: "Play a song to see its lyrics here..."
-            }
-        };
-
-        function initSettings() {
-            const savedName = localStorage.getItem('etoify_user_name') || 'Eng. Mohammed';
-            document.getElementById('userName').innerText = savedName;
-            const savedAvatar = localStorage.getItem('etoify_avatar');
-            if (savedAvatar) {
-                document.querySelectorAll('.profile-img').forEach(img => img.src = savedAvatar);
-            }
-            const savedVolume = localStorage.getItem('etoify_volume') !== null ? parseFloat(localStorage.getItem('etoify_volume')) : 1;
-            audioPlayer.volume = savedVolume;
-            document.getElementById('volumeFill').style.width = (savedVolume * 100) + '%';
-        }
-        initSettings();
-
-        window.handleAvatarUpload = (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const dataUrl = e.target.result;
-                    localStorage.setItem('etoify_avatar', dataUrl);
-                    document.querySelectorAll('.profile-img').forEach(img => img.src = dataUrl);
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        window.changeName = () => {
-            const promptText = translations[currentLang].enter_name;
-            const newName = prompt(promptText, document.getElementById('userName').innerText);
-            if (newName && newName.trim() !== "") {
-                document.getElementById('userName').innerText = newName;
-                localStorage.setItem('etoify_user_name', newName);
-            }
-        };
-
-        const likesRef = ref(db, 'likes/' + userId);
-        onValue(likesRef, (snapshot) => {
-            likedSongsDb = snapshot.val() || {};
-            renderLikedSongs();
-            updateAllLikeButtons();
-        });
-
-        window.toggleLike = (id, title, artist, thumbnail) => {
-            if (likedSongsDb[id]) {
-                remove(ref(db, `likes/${userId}/${id}`));
-            } else {
-                set(ref(db, `likes/${userId}/${id}`), { id, title, artist, thumbnail });
-            }
-        };
-
-        window.toggleLikeCurrent = () => {
-            if(currentSong) window.toggleLike(currentSong.id, currentSong.title, currentSong.artist, currentSong.thumbnail);
-        };
-
-        function updateAllLikeButtons() {
-            if (currentSong) {
-                const btn = document.getElementById('playerLikeBtn');
-                btn.innerHTML = likedSongsDb[currentSong.id] ? '<i class="fa-solid fa-heart" style="color:#1DB954;"></i>' : '<i class="fa-regular fa-heart"></i>';
-            }
-            document.querySelectorAll('.like-btn-item').forEach(btn => {
-                const id = btn.dataset.id;
-                btn.innerHTML = likedSongsDb[id] ? '<i class="fa-solid fa-heart" style="color:#1DB954;"></i>' : '<i class="fa-regular fa-heart"></i>';
-            });
-        }
-
-        function renderLikedSongs() {
-            const container = document.getElementById('likedSongsList');
-            container.innerHTML = '';
-            const songs = Object.values(likedSongsDb);
-            if(songs.length === 0) {
-                container.innerHTML = `<p data-i18n="no_liked">${translations[currentLang].no_liked}</p>`;
-                return;
-            }
-            songs.forEach(song => {
-                container.innerHTML += createSongCardHTML(song);
-            });
-        }
-
-        window.performSearch = async () => {
-            const query = document.getElementById('searchInput').value;
-            if(!query) return;
-            
-            document.getElementById('searchLoader').style.display = 'block';
-            document.getElementById('searchResults').innerHTML = '';
-
-            try {
-                // استخدمت دالة الـ Fallback هنا عشان الـ CORS
-                const data = await fetchWithFallback(`/search?q=${encodeURIComponent(query)}&filter=music_songs`);
-                document.getElementById('searchLoader').style.display = 'none';
-                
-                const results = data.items.filter(item => item.type === 'stream').slice(0, 15);
-                results.forEach(item => {
-                    const song = {
-                        id: item.url.split('watch?v=')[1],
-                        title: item.title,
-                        artist: item.uploaderName,
-                        thumbnail: item.thumbnail
-                    };
-                    document.getElementById('searchResults').innerHTML += createSongCardHTML(song);
-                });
-                updateAllLikeButtons();
-            } catch (err) {
-                console.error(err);
-                document.getElementById('searchLoader').style.display = 'none';
-                document.getElementById('searchResults').innerHTML = '<p style="color: red;">حدث خطأ أثناء البحث، يرجى المحاولة مرة أخرى لاحقاً.</p>';
-            }
-        };
-
-        function createSongCardHTML(song) {
-            const escapedTitle = song.title.replace(/'/g, "\\'");
-            const escapedArtist = song.artist.replace(/'/g, "\\'");
-            return `
-                <div class="song-card">
-                    <div class="song-img" style="background-image: url('${song.thumbnail}')"></div>
-                    <div class="song-info">
-                        <h4>${song.title}</h4>
-                        <p>${song.artist}</p>
-                    </div>
-                    <div class="song-actions">
-                        <button class="like-btn-item" data-id="${song.id}" onclick="window.toggleLike('${song.id}', '${escapedTitle}', '${escapedArtist}', '${song.thumbnail}')">
-                            <i class="fa-regular fa-heart"></i>
-                        </button>
-                        <button class="play-btn" onclick="window.playYTSong('${song.id}', '${escapedTitle}', '${escapedArtist}', '${song.thumbnail}')">
-                            <i class="fa-solid fa-play"></i> <span data-i18n="play">${translations[currentLang].play}</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.playYTSong = async (id, title, artist, thumbnail) => {
-            currentSong = { id, title, artist, thumbnail };
-            document.getElementById('playerTitle').innerText = translations[currentLang].loading;
-            document.getElementById('playerArtist').innerText = artist;
-            document.getElementById('playerImg').style.backgroundImage = `url('${thumbnail}')`;
-            updateAllLikeButtons();
-            
-            // طلب الكلمات في الخلفية
-            fetchLyrics(title, artist);
-
-            try {
-                // استخدمت دالة الـ Fallback هنا برضو
-                const data = await fetchWithFallback(`/streams/${id}`);
-                const audioStreams = data.audioStreams;
-                if(audioStreams && audioStreams.length > 0) {
-                    audioPlayer.src = audioStreams[0].url; 
-                    audioPlayer.play();
+// ضيف الكود ده تحت تعريف الـ uid والـ username 
+        if(uid && username) {
+            get(ref(db, `users/${uid}`)).then((snapshot) => {
+                if(snapshot.exists()) {
+                    const dbData = snapshot.val();
                     
-                    document.getElementById('playerTitle').innerText = title;
-                    document.getElementById('playIcon').className = 'fa-solid fa-pause';
-                    isPlaying = true;
-                }
-            } catch(e) {
-                console.error(e);
-                document.getElementById('playerTitle').innerText = "خطأ في التشغيل";
-            }
-        };
-
-        window.togglePlay = () => {
-            if(!audioPlayer.src) return;
-            if(audioPlayer.paused) {
-                audioPlayer.play();
-                document.getElementById('playIcon').className = 'fa-solid fa-pause';
-                isPlaying = true;
-            } else {
-                audioPlayer.pause();
-                document.getElementById('playIcon').className = 'fa-solid fa-play';
-                isPlaying = false;
-            }
-        };
-
-        // ==========================================
-        //  منظومة الكلمات (نفس لوجيك البايثون بالمللي)
-        // ==========================================
-        let currentLyricsData = [];
-        let fullLyricsTextForCopy = "";
-
-        // دالة تنظيف العنوان زى اللى في الكلاس 
-        function cleanStringForLyrics(title) {
-            if(!title) return "";
-            title = title.replace(/[\(\[\{].*?[\)\]\}]/g, '');
-            const junkWords = ['official video', 'official audio', 'lyric video', 'lyrics', 'official music video', 'video', 'audio', '4k', '8k', 'high quality', 'hq', 'full hd', 'منتج حصري', 'فيديو كليب', 'حصريا', 'حصرياً', 'كلمات', 'بالكلمات', 'مترجمة', 'مترجم', 'كاملة', 'اغنية', 'أغنية', 'نسخة أصلية', 'ريمكس', 'بطيء', 'موسيقى', 'كليب', 'official', 'music', 'live'];
-            junkWords.forEach(word => {
-                const regex = new RegExp(`\\b${word}\\b`, 'gi');
-                title = title.replace(regex, '');
-            });
-            title = title.replace(/[^\w\s\u0600-\u06FF]/g, ' ');
-            return title.replace(/\s+/g, ' ').trim();
-        }
-
-        async function fetchLyrics(title, artist) {
-            const container = document.getElementById('lyricsContainer');
-            container.innerHTML = '<p class="lyric-line" style="color: #1DB954;">جاري البحث عن الكلمات...</p>';
-            currentLyricsData = [];
-            fullLyricsTextForCopy = "";
-
-            let cleanTitle = cleanStringForLyrics(title);
-            let cleanArtist = cleanStringForLyrics(artist);
-
-            // لو مفيش فنان واسم الأغنية فيه شرطة، نقسمه
-            if (!cleanArtist && title.match(/[-:|]/)) {
-                let parts = title.split(/[-:|]/);
-                if (parts.length >= 2) {
-                    cleanArtist = cleanStringForLyrics(parts[0]);
-                    cleanTitle = cleanStringForLyrics(parts[1]);
-                }
-            }
-
-            try {
-                let synced = null; let plain = null;
-                // محاولة 1: Get العادي
-                let res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
-                if(res.ok) {
-                    let data = await res.json();
-                    synced = data.syncedLyrics; plain = data.plainLyrics;
-                } else {
-                    // محاولة 2: بحث كامل
-                    let query = `${cleanTitle} ${cleanArtist}`.trim();
-                    res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
-                    if(res.ok) {
-                        let data = await res.json();
-                        if(data && data.length > 0) { synced = data[0].syncedLyrics; plain = data[0].plainLyrics; }
-                        else {
-                            // محاولة 3: بحث بالعنوان بس
-                            res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}`);
-                            if(res.ok) {
-                                let dataTitle = await res.json();
-                                if(dataTitle && dataTitle.length > 0) { synced = dataTitle[0].syncedLyrics; plain = dataTitle[0].plainLyrics; }
-                            }
+                    // تحديث الكوينز والسكور من الداتابيز
+                    totalSavedCoins = dbData.coins !== undefined ? dbData.coins : totalSavedCoins;
+                    savedHighScore = dbData.score !== undefined ? dbData.score : savedHighScore;
+                    
+                    // لو الأدمن زود عدد العربيات، هنفتحله عربيات بالترتيب
+                    if(dbData.carsOwned > unlockedCars.length) {
+                        for(let i = unlockedCars.length; i < dbData.carsOwned; i++) {
+                            if(i < cars.length) unlockedCars.push(i);
                         }
                     }
+
+                    // حفظ البيانات الجديدة في المتصفح وتحديث الواجهة
+                    localStorage.setItem('hw_coins', totalSavedCoins);
+                    localStorage.setItem('hw_highscore', savedHighScore);
+                    localStorage.setItem('hw_unlocked', JSON.stringify(unlockedCars));
+                    updateGlobalCoins();
+                    renderShop(); // عشان لو في عربيات جديدة اتفتحت تظهر
                 }
-                renderLyrics(synced, plain);
-            } catch (err) {
-                console.error("Lyrics fetch error:", err);
-                container.innerHTML = '<p class="lyric-line" style="color: red;">خطأ في الاتصال بسيرفر الكلمات.</p>';
-            }
+            }).catch((error) => console.error("Error fetching data:", error));
         }
 
-        function renderLyrics(synced, plain) {
-            const container = document.getElementById('lyricsContainer');
-            container.innerHTML = '<div style="height: 35vh;"></div>'; // Spacer علوي
-
-            if (synced) {
-                const lines = synced.split('\n');
-                const regex = /\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
-                
-                lines.forEach(line => {
-                    const match = line.match(regex);
-                    if (match) {
-                        const mins = parseInt(match[1]);
-                        const secs = parseFloat(match[2]);
-                        const timeInSec = (mins * 60) + secs;
-                        
-                        let text = match[3].trim().replace(/<\d+:\d+(?:\.\d+)?>/g, '').trim();
-                        if (text) fullLyricsTextForCopy += text + "\n";
-                        
-                        const p = document.createElement('p');
-                        p.className = 'lyric-line';
-                        p.innerText = text || "• • •";
-                        // لما تدوس على السطر يروح للوقت بتاعه
-                        p.onclick = () => { audioPlayer.currentTime = timeInSec; }; 
-                        container.appendChild(p);
-                        
-                        currentLyricsData.push({ time: timeInSec, element: p });
-                    }
-                });
-            } else if (plain) {
-                fullLyricsTextForCopy = plain;
-                const p = document.createElement('p');
-                p.className = 'lyric-line';
-                p.style.whiteSpace = 'pre-wrap';
-                p.innerText = plain;
-                container.appendChild(p);
-            } else {
-                fullLyricsTextForCopy = "";
-                container.innerHTML += `<p class="lyric-line">لم يتم العثور على كلمات لهذه الأغنية.</p>`;
-            }
-            container.innerHTML += '<div style="height: 35vh;"></div>'; // Spacer سفلي
+        // أمان: لو دخل على اللعبة من غير ما يسجل، نرجعه للتحميل
+        if(!uid || !username) {
+            window.location.href = 'loading.html';
         }
 
-        window.copyLyricsToClipboard = () => {
-            if(fullLyricsTextForCopy) {
-                navigator.clipboard.writeText(fullLyricsTextForCopy);
-                const btn = document.getElementById('copyLyricsBtn');
-                const origText = btn.innerHTML;
-                btn.innerHTML = "<i class='fa-solid fa-check'></i> Copied!";
-                btn.style.backgroundColor = "#2ecc71";
-                
-                setTimeout(() => {
-                    btn.innerHTML = origText;
-                    btn.style.backgroundColor = "var(--primary-color)";
-                }, 1500);
-            }
+        // دالة عالمية لرفع البيانات (بتتحسب فيها الليفلات)
+        window.syncToFirebase = function(currentScore, currentCoins, carsCount) {
+            if(!uid) return;
+            
+            // نظام الليفلات: كل 1000 سكور = 1 ليفل، وأقصى حاجة ليفل 100
+            let calculatedLevel = Math.floor(currentScore / 1000) + 1;
+            if (calculatedLevel > 100) calculatedLevel = 100; 
+
+            // تحديث البيانات في الداتابيز
+            update(ref(db, `users/${uid}`), {
+                score: currentScore,
+                coins: currentCoins,
+                carsOwned: carsCount,
+                level: calculatedLevel,
+                username: username
+            });
         };
 
-        // تحديث الوقت وتزامن الكلمات
-        audioPlayer.addEventListener('timeupdate', () => {
-            const current = audioPlayer.currentTime;
-            const duration = audioPlayer.duration;
-            if(duration) {
-                document.getElementById('progressFill').style.width = (current / duration) * 100 + '%';
-                document.getElementById('currentTime').innerText = formatTime(current);
-                document.getElementById('totalTime').innerText = formatTime(duration);
-            }
+// الكود ده بيشيك لو اليوزر نيم هو بتاع المطور
+        // غير 'eto_admin' باليوزر نيم اللي أنت عايزه يكون هو الأدمن
+        const adminUsername = 'eto_admin'; 
+        if(username === adminUsername) {
+            document.getElementById('admin-panel-btn').style.display = 'inline-block';
+        }
 
-            // اللمسة السحرية بتاعت التزامن (مع تعويض 150 مللي ثانية)
-            if (currentLyricsData.length > 0) {
-                const adjustedPosition = current + 0.150; 
-                let newIdx = -1;
+// دالة عرض الترتيب في الصفحة المخصصة
+        window.loadLeaderboardData = async function() {
+            const listDiv = document.getElementById('leaderboard-list');
+            listDiv.innerHTML = '<h3 style="text-align:center; color:#aaa; margin-top: 20px;">جاري الاتصال بالسيرفر... ⏳</h3>';
+
+            try {
+                // بنجيب أعلى 50 لاعب بناءً على السكور
+                const topUsersRef = query(ref(db, 'users'), orderByChild('score'), limitToLast(50));
+                const snapshot = await get(topUsersRef);
                 
-                for(let i=0; i < currentLyricsData.length; i++) {
-                    if (adjustedPosition >= currentLyricsData[i].time) {
-                        newIdx = i;
-                    } else {
-                        break;
-                    }
-                }
-
-                if (newIdx !== -1) {
-                    const activeElement = document.querySelector('.lyric-line.active');
-                    const targetElement = currentLyricsData[newIdx].element;
+                if (snapshot.exists()) {
+                    let users = [];
+                    snapshot.forEach((childSnapshot) => {
+                        users.push(childSnapshot.val());
+                    });
                     
-                    if (activeElement !== targetElement) {
-                        if (activeElement) activeElement.classList.remove('active');
-                        targetElement.classList.add('active');
+                    // عكس الترتيب عشان الأعلى سكور يبقى فوق
+                    users.reverse();
+
+                    let html = '';
+                    users.forEach((user, index) => {
+                        let rankIcon = (index === 0) ? '🥇' : (index === 1) ? '🥈' : (index === 2) ? '🥉' : `<span style="font-size: 16px;">#${index + 1}</span>`;
+                        // تمييز اللاعب الحالي بلون مختلف
+                        let isMe = (user.username === username) ? 'style="border-color: #38b000; box-shadow: 0 0 15px rgba(56, 176, 0, 0.3); background: rgba(56, 176, 0, 0.1);"' : '';
                         
-                        // الأنيميشن السلس للنزول السكرول
-                        targetElement.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
-                    }
+                        html += `
+                        <div class="lb-item" ${isMe}>
+                            <div class="lb-rank">${rankIcon}</div>
+                            <div class="lb-name">${user.username} <span class="lb-level">Lvl ${user.level || 1}</span></div>
+                            <div class="lb-stats">⭐ ${Math.floor(user.score || 0)} | 🚗 ${user.carsOwned || 1}</div>
+                        </div>`;
+                    });
+                    listDiv.innerHTML = html;
+                } else {
+                    listDiv.innerHTML = '<p style="text-align:center; margin-top: 20px;">لا يوجد لاعبين حتى الآن، كن أنت الأول! 🏎️</p>';
                 }
+            } catch(e) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#FF3366; margin-top: 20px;">حدث خطأ في الاتصال، تأكد من الإنترنت ⚠️</p>';
+                console.error(e);
+            }
+        };
+    </script>
+
+    <script>
+// --- Music Manager Logic ---
+        let customSongs = JSON.parse(localStorage.getItem('hw_custom_songs')) || [];
+        let currentSongId = localStorage.getItem('hw_current_song_id') || null;
+
+        function showMusicManager() {
+            document.getElementById('music-manager-screen').style.display = 'flex';
+            renderMusicList();
+        }
+
+        function hideMusicManager() {
+            document.getElementById('music-manager-screen').style.display = 'none';
+        }
+
+        // دالة إضافة الأغنية: تجلب اسم الفيديو تلقائياً من يوتيوب
+        async function addSong() {
+            const input = document.getElementById('yt-link-input');
+            const videoId = extractVideoId(input.value);
+
+            if (videoId) {
+                try {
+                    // استخدام خدمة noembed لجلب عنوان الفيديو (Title)
+                    const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+                    const data = await response.json();
+                    
+                    // إذا لم يجد الاسم، سيستخدم تسمية افتراضية
+                    const songTitle = data.title || ("أغنية " + (customSongs.length + 1));
+
+                    const newSong = { id: videoId, title: songTitle };
+                    customSongs.push(newSong);
+                    localStorage.setItem('hw_custom_songs', JSON.stringify(customSongs));
+                    input.value = '';
+                    renderMusicList();
+                } catch (error) {
+                    console.error("خطأ في جلب بيانات الفيديو:", error);
+                    // إضافة الأغنية باسم افتراضي في حالة فشل الاتصال بالخدمة
+                    const newSong = { id: videoId, title: "أغنية " + (customSongs.length + 1) };
+                    customSongs.push(newSong);
+                    localStorage.setItem('hw_custom_songs', JSON.stringify(customSongs));
+                    input.value = '';
+                    renderMusicList();
+                }
+            } else {
+                alert("الرابط غير صحيح! تأكد أنه رابط يوتيوب.");
+            }
+        }
+
+        function extractVideoId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length == 11) ? match[2] : null;
+        }
+
+        function renderMusicList() {
+            const container = document.getElementById('music-list-container');
+            container.innerHTML = '';
+            if(customSongs.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#888;">لا توجد أغاني مضافة بعد</p>';
+                return;
+            }
+            customSongs.forEach((song, index) => {
+                const isActive = song.id === currentSongId;
+                container.innerHTML += `
+                    <div class="music-item ${isActive ? 'active' : ''}">
+                        <span style="font-weight:bold; color:white; font-size:14px;">${song.title}</span>
+                        <div class="music-controls">
+                            <button class="btn-play" onclick="playCustomSong('${song.id}')">${isActive ? '🔈 شغال' : '▶️ تشغيل'}</button>
+                            <button class="btn-del" onclick="deleteSong(${index})">🗑️</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function playCustomSong(id) {
+            // إيقاف موسيقى اللعبة الأصلية إذا كانت تعمل
+            if (typeof bgMusic !== 'undefined') {
+                bgMusic.pause();
+            }
+            
+            currentSongId = id;
+            localStorage.setItem('hw_current_song_id', id);
+            
+            const playerContainer = document.getElementById('youtube-player-container');
+            
+            // إظهار الحاوية ضروري لأن المتصفحات تمنع الـ iframe المخفي من العمل
+            playerContainer.style.display = 'block'; 
+            
+            // تشغيل الفيديو عبر iframe مع خاصية التشغيل التلقائي والتكرار والصلاحيات
+            playerContainer.innerHTML = `<iframe 
+                width="0" 
+                height="0" 
+                src="https://www.youtube.com/embed/${id}?autoplay=1&loop=1&playlist=${id}&enablejsapi=1" 
+                frameborder="0" 
+                allow="autoplay; encrypted-media" 
+                allowfullscreen></iframe>`;
+            
+            renderMusicList();
+        }
+
+        function deleteSong(index) {
+            if (customSongs[index].id === currentSongId) {
+                document.getElementById('youtube-player-container').innerHTML = '';
+                currentSongId = null;
+                localStorage.removeItem('hw_current_song_id');
+            }
+            customSongs.splice(index, 1);
+            localStorage.setItem('hw_custom_songs', JSON.stringify(customSongs));
+            renderMusicList();
+        }
+
+        // محاولة تشغيل الأغنية المحفوظة عند تحميل الصفحة
+        window.addEventListener('load', () => {
+            if (currentSongId && (typeof musicEnabled === 'undefined' || musicEnabled)) {
+                // تأخير بسيط لضمان تحميل العناصر وتجاوز قيود المتصفح
+                setTimeout(() => playCustomSong(currentSongId), 2000);
             }
         });
 
-        window.seekAudio = (e) => {
-            if(!audioPlayer.duration) return;
-            const bar = document.getElementById('progressBar');
-            const clickX = e.offsetX;
-            const width = bar.clientWidth;
-            audioPlayer.currentTime = (clickX / width) * audioPlayer.duration;
-        };
-
-        window.changeVolume = (e) => {
-            const bar = document.getElementById('volumeBar');
-            const clickX = e.offsetX;
-            const width = bar.clientWidth;
-            const vol = clickX / width;
-            audioPlayer.volume = vol;
-            document.getElementById('volumeFill').style.width = (vol * 100) + '%';
-            localStorage.setItem('etoify_volume', vol);
-        };
-
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        window.switchPage = (pageId) => {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(`page-${pageId}`).classList.add('active');
-            
-            document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-
-            const titleKey = `${pageId}_title`;
-            document.getElementById('pageTitle').innerText = translations[currentLang][titleKey] || translations[currentLang][pageId];
-        };
-
-        window.changeLanguage = (lang) => {
-            currentLang = lang;
-            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-            document.documentElement.lang = lang;
-            
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if(translations[lang][key]) el.innerText = translations[lang][key];
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                const key = el.getAttribute('data-i18n-placeholder');
-                if(translations[lang][key]) el.placeholder = translations[lang][key];
-            });
-            
-            renderLikedSongs(); 
-        };
-
-        document.getElementById('searchInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') window.performSearch();
-        });
     </script>
+    
+    <div id="youtube-player-container" ></div>
 </body>
 </html>
