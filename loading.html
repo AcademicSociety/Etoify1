@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Loading... | Cars 2D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body {
+            margin: 0; padding: 0; 
+            height: 100vh; 
+            background: url('game.jpg') center/cover no-repeat;
+            display: flex; justify-content: center; align-items: center;
+            color: white; overflow: hidden;
+            background-color: #0f0f13; /* Fallback */
+        }
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 15, 19, 0.85); z-index: 1;
+        }
+        .container {
+            position: relative; z-index: 2;
+            background: rgba(20, 20, 30, 0.95); padding: 30px; border-radius: 15px;
+            width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            border: 2px solid #2b2b36;
+        }
+        h1 { color: #FFD700; margin-top: 0; font-weight: 900; }
+        
+        /* Loading Section */
+        #loading-section { display: block; }
+        .progress-bar {
+            width: 100%; height: 20px; background: #2b2b36;
+            border-radius: 10px; overflow: hidden; margin: 20px 0;
+            border: 1px solid #FFD700;
+        }
+        .progress-fill {
+            height: 100%; width: 0%; background: #FFD700;
+            transition: width 0.3s;
+        }
+        #loading-text { font-size: 14px; color: #aaa; }
+
+        /* Auth Section */
+        #auth-section { display: none; }
+        input {
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px;
+            border: 1px solid #2b2b36; background: #1a1a24; color: white;
+            outline: none; font-size: 16px;
+        }
+        input:focus { border-color: #FFD700; }
+        .btn {
+            width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px;
+            border: none; background: #FFD700; color: #0f0f13;
+            font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .switch-mode { color: #aaa; font-size: 13px; margin-top: 15px; cursor: pointer; }
+        .switch-mode span { color: #FFD700; text-decoration: underline; }
+        .error-msg { color: #FF3366; font-size: 13px; margin-top: 5px; min-height: 20px; }
+        
+        /* Captcha */
+        .captcha-box {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1a1a24; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #2b2b36;
+        }
+        .captcha-box span { font-weight: bold; color: #FFD700; font-size: 18px; letter-spacing: 2px;}
+        .captcha-box input { width: 60px; margin: 0; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay"></div>
+
+    <div class="container">
+        <h1>CARS 2D</h1>
+        
+        <div id="loading-section">
+            <h3 id="loading-title">جاري التحميل...</h3>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div id="loading-text">Loading game assets...</div>
+        </div>
+
+        <div id="auth-section">
+            <h3 id="auth-title">تسجيل الدخول</h3>
+            <input type="text" id="username" placeholder="اسم المستخدم (بدون مسافات)" autocomplete="off">
+            <input type="password" id="password" placeholder="كلمة المرور">
+            
+            <div class="captcha-box">
+                <span id="captcha-question">? = 5 + 3</span>
+                <input type="number" id="captcha-answer" placeholder="الناتج">
+            </div>
+
+            <div class="error-msg" id="error-msg"></div>
+            
+            <button class="btn" id="action-btn" onclick="handleAuth()">دخول</button>
+            <div class="switch-mode" onclick="toggleMode()">
+                ليس لديك حساب؟ <span id="mode-text">إنشاء حساب جديد</span>
+            </div>
+            <div class="switch-mode" style="margin-top: 5px;">
+                نسيت كلمة المرور؟ <span onclick="window.location.href='forgot.html'">استرجاع الحساب</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBWfF2YHd8GWg5iUMlKFxnYzANLt6MSb9k",
+            authDomain: "eto-host.firebaseapp.com",
+            databaseURL: "https://eto-host-default-rtdb.firebaseio.com",
+            projectId: "eto-host",
+            storageBucket: "eto-host.firebasestorage.app",
+            messagingSenderId: "722707070554",
+            appId: "1:722707070554:web:c556e865af6c4a6d822263",
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // --- نظام التحميل الوهمي ---
+        let loadingTexts = ["Loading environment...", "Loading cars upgrades...", "Checking servers...", "Almost ready..."];
+        let progress = 0;
+        let textIndex = 0;
+        
+        let loadingInterval = setInterval(() => {
+            progress += Math.floor(Math.random() * 15) + 5;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(loadingInterval);
+                setTimeout(showAuth, 500); // إظهار شاشة الدخول بعد ما يخلص
+            }
+            document.getElementById('progress-fill').style.width = progress + '%';
+            
+            if (progress % 25 === 0 && textIndex < loadingTexts.length) {
+                document.getElementById('loading-text').innerText = loadingTexts[textIndex];
+                textIndex++;
+            }
+        }, 300);
+
+        function showAuth() {
+            document.getElementById('loading-section').style.display = 'none';
+            document.getElementById('auth-section').style.display = 'block';
+            generateCaptcha();
+        }
+
+        // --- نظام التحقق (Not a robot) ---
+        let captchaResult = 0;
+        window.generateCaptcha = function() {
+            let num1 = Math.floor(Math.random() * 10) + 1;
+            let num2 = Math.floor(Math.random() * 10) + 1;
+            captchaResult = num1 + num2;
+            document.getElementById('captcha-question').innerText = `? = ${num1} + ${num2}`;
+        }
+
+        // --- نظام تسجيل الدخول وإنشاء الحساب ---
+        let isLoginMode = true;
+
+        window.toggleMode = function() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-title').innerText = isLoginMode ? 'تسجيل الدخول' : 'إنشاء حساب جديد';
+            document.getElementById('action-btn').innerText = isLoginMode ? 'دخول' : 'إنشاء الحساب';
+            document.getElementById('mode-text').innerText = isLoginMode ? 'إنشاء حساب جديد' : 'تسجيل دخول';
+            document.getElementById('error-msg').innerText = '';
+            generateCaptcha();
+        }
+
+        window.handleAuth = async function() {
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            const captchaInput = document.getElementById('captcha-answer').value;
+            const errorMsg = document.getElementById('error-msg');
+
+            if (!username || !password) {
+                errorMsg.innerText = "يرجى ملء جميع الحقول!";
+                return;
+            }
+            if (username.includes(" ") || /[\.\#\$\[\]]/.test(username)) {
+                errorMsg.innerText = "اسم المستخدم يجب ألا يحتوي على مسافات أو رموز مثل ( . , # , $ )";
+                return;
+            }
+            if (parseInt(captchaInput) !== captchaResult) {
+                errorMsg.innerText = "إجابة التحقق خاطئة، هل أنت روبوت؟";
+                generateCaptcha();
+                return;
+            }
+
+            errorMsg.innerText = "جاري التحميل...";
+            errorMsg.style.color = "#FFD700";
+
+            // خدعة الإيميل الوهمي للمصادقة
+            const dummyEmail = `${username}@cars2d.game`;
+
+            try {
+                if (isLoginMode) {
+                    // تسجيل دخول
+                    const userCredential = await signInWithEmailAndPassword(auth, dummyEmail, password);
+                    loginSuccess(userCredential.user.uid, username);
+                } else {
+                    // إنشاء حساب - التأكد أولاً أن الاسم غير مأخوذ
+                    const usernameRef = ref(db, `usernames/${username}`);
+                    const snapshot = await get(usernameRef);
+                    
+                    if (snapshot.exists()) {
+                        errorMsg.style.color = "#FF3366";
+                        errorMsg.innerText = "اسم المستخدم مأخوذ مسبقاً، اختر اسماً آخر.";
+                        return;
+                    }
+
+                    // إنشاء الحساب في Firebase Auth
+                    const userCredential = await createUserWithEmailAndPassword(auth, dummyEmail, password);
+                    const uid = userCredential.user.uid;
+
+                    // حفظ بيانات المستخدم الجديد في الـ Database
+                    await set(ref(db, `usernames/${username}`), uid);
+                    await set(ref(db, `users/${uid}`), {
+                        username: username,
+                        coins: 0,
+                        level: 1,
+                        score: 0,
+                        carsOwned: 1
+                    });
+
+                    loginSuccess(uid, username);
+                }
+            } catch (error) {
+                errorMsg.style.color = "#FF3366";
+                console.error(error);
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+                    errorMsg.innerText = "اسم المستخدم أو كلمة المرور غير صحيحة.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorMsg.innerText = "كلمة المرور ضعيفة (يجب أن تكون 6 أحرف على الأقل).";
+                } else {
+                    errorMsg.innerText = "حدث خطأ: " + error.message;
+                }
+            }
+        }
+
+        function loginSuccess(uid, username) {
+            // حفظ بيانات اللاعب محلياً عشان الـ index.html يقراها
+            localStorage.setItem('game_uid', uid);
+            localStorage.setItem('game_username', username);
+            
+            document.getElementById('error-msg').style.color = "#00FF00";
+            document.getElementById('error-msg').innerText = "تم بنجاح! جاري الدخول للعبة...";
+            
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

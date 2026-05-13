@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | Cars 2D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { margin: 0; background: #0f0f13; color: white; padding: 20px; }
+        header { border-bottom: 2px solid #FF3366; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: #FF3366; margin: 0; }
+        .back-btn { background: #333; color: white; padding: 8px 15px; border-radius: 8px; text-decoration: none; }
+        .user-card { background: #1a1a24; border: 1px solid #333; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .user-card span { font-weight: bold; width: 100%; color: #FFD700; }
+        input { padding: 8px; border-radius: 5px; border: 1px solid #555; background: #222; color: white; outline: none; }
+        button { background: #4cc9f0; border: none; padding: 8px 15px; border-radius: 5px; color: black; font-weight: bold; cursor: pointer; }
+        button:hover { filter: brightness(1.1); }
+        .btn-danger { background: #FF3366; color: white; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>لوحة تحكم الأبطال ⚙️</h1>
+        <a href="index.html" class="back-btn">رجوع للعبة</a>
+    </header>
+    
+    <div id="users-list">
+        <h3>جاري تحميل اللاعبين...</h3>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, get, update, remove, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBWfF2YHd8GWg5iUMlKFxnYzANLt6MSb9k",
+            authDomain: "eto-host.firebaseapp.com",
+            databaseURL: "https://eto-host-default-rtdb.firebaseio.com",
+            projectId: "eto-host",
+            storageBucket: "eto-host.firebasestorage.app",
+            messagingSenderId: "722707070554",
+            appId: "1:722707070554:web:c556e865af6c4a6d822263",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        // الأمان: التأكد إن اللي داخل هو الأدمن (غير اسم الأدمن هنا برضه لو حبيت)
+        const currentUsername = localStorage.getItem('game_username');
+        if(currentUsername !== 'eto_admin') {
+            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>ممنوع الدخول! أنت لست المطور.</h1>";
+        } else {
+            loadUsers();
+        }
+
+        async function loadUsers() {
+            const list = document.getElementById('users-list');
+            try {
+                const snapshot = await get(ref(db, 'users'));
+                if(snapshot.exists()) {
+                    list.innerHTML = '';
+                    snapshot.forEach(child => {
+                        const uid = child.key;
+                        const data = child.val();
+                        
+                        list.innerHTML += `
+                            <div class="user-card" id="card-${uid}">
+                                <span>اللاعب: ${data.username}</span>
+                                <input type="text" id="uname-${uid}" value="${data.username}" placeholder="اليوزر نيم" style="width: 100%;">
+                                <div style="display: flex; gap: 10px; width: 100%;">
+                                    <input type="number" id="score-${uid}" value="${data.score || 0}" placeholder="السكور">
+                                    <input type="number" id="coins-${uid}" value="${data.coins || 0}" placeholder="الكوينز">
+                                    <input type="number" id="level-${uid}" value="${data.level || 1}" placeholder="الليفل">
+                                    <input type="number" id="cars-${uid}" value="${data.carsOwned || 1}" placeholder="العربيات">
+                                </div>
+                                <button onclick="updateUserData('${uid}', '${data.username}')" style="width: 100%;">حفظ التعديلات 💾</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    list.innerHTML = "<h3>لا يوجد لاعبين حتى الآن.</h3>";
+                }
+            } catch(e) {
+                list.innerHTML = "<h3>حدث خطأ في تحميل البيانات</h3>";
+                console.error(e);
+            }
+        }
+
+        window.updateUserData = async function(uid, oldUsername) {
+            const newUname = document.getElementById(`uname-${uid}`).value.trim().toLowerCase();
+            const newScore = parseInt(document.getElementById(`score-${uid}`).value);
+            const newCoins = parseInt(document.getElementById(`coins-${uid}`).value);
+            const newLevel = parseInt(document.getElementById(`level-${uid}`).value);
+            const newCars = parseInt(document.getElementById(`cars-${uid}`).value);
+
+            if(!newUname || isNaN(newScore) || isNaN(newCoins) || isNaN(newLevel) || isNaN(newCars)) {
+                alert("يرجى إدخال بيانات صحيحة!"); return;
+            }
+
+            try {
+                if(newUname !== oldUsername) {
+                    const checkRef = await get(ref(db, `usernames/${newUname}`));
+                    if(checkRef.exists()) {
+                        alert("اسم المستخدم الجديد مأخوذ مسبقاً!"); return;
+                    }
+                    await remove(ref(db, `usernames/${oldUsername}`));
+                    await set(ref(db, `usernames/${newUname}`), uid);
+                }
+
+                await update(ref(db, `users/${uid}`), {
+                    username: newUname,
+                    score: newScore,
+                    coins: newCoins,
+                    level: newLevel,
+                    carsOwned: newCars
+                });
+
+                alert("تم تحديث بيانات اللاعب بنجاح! ✅");
+                loadUsers(); 
+            } catch(e) {
+                alert("حدث خطأ أثناء الحفظ!");
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>
