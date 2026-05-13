@@ -55,7 +55,7 @@
         .search-container { display: flex; gap: 10px; margin-bottom: 30px; }
         .search-container input { flex: 1; padding: 15px 20px; border-radius: 25px; border: 1px solid transparent; background-color: #242424; color: white; font-size: 15px; outline: none; transition: 0.3s; }
         .search-container input:focus { border-color: var(--primary-color); background-color: #2a2a2a; }
-        .search-btn, .action-btn { background-color: var(--primary-color); color: black; border: none; border-radius: 25px; padding: 10px 25px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .search-btn, .action-btn { background-color: var(--primary-color); color: white; border: none; border-radius: 25px; padding: 10px 25px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .search-btn:hover, .action-btn:hover { background-color: var(--primary-hover); transform: scale(1.05); }
 
         .song-card { display: flex; align-items: center; background-color: #181818; border-radius: 10px; padding: 15px; margin-bottom: 10px; transition: 0.3s; }
@@ -103,6 +103,14 @@
         
         .loader { border: 4px solid #333; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ستايل صفحة الكلمات (Lyrics) المأخوذ من تصميمك */
+        .lyrics-wrapper { height: calc(100vh - 200px); overflow-y: auto; text-align: center; scroll-behavior: smooth; }
+        .lyrics-wrapper::-webkit-scrollbar { display: none; }
+        .lyric-line { font-size: 22px; color: #555555; font-weight: 600; padding: 10px; transition: all 0.3s ease-out; cursor: pointer; margin: 5px auto; max-width: 800px; line-height: 1.5; }
+        .lyric-line:hover { color: #888; }
+        .lyric-line.active { font-size: 32px; color: #1DB954; font-weight: 900; padding: 15px; transform: scale(1.05); text-shadow: 0 0 10px rgba(29, 185, 84, 0.3); }
+        .lyrics-header { display: flex; justify-content: flex-end; padding: 0 30px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -120,6 +128,7 @@
                 <li class="active" onclick="window.switchPage('home')"><i class="fa-solid fa-house"></i> <span data-i18n="home">الرئيسية</span></li>
                 <li onclick="window.switchPage('search')"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search">بحث</span></li>
                 <li onclick="window.switchPage('liked')"><i class="fa-solid fa-heart"></i> <span data-i18n="liked">المفضلة</span></li>
+                <li onclick="window.switchPage('lyrics')"><i class="fa-solid fa-microphone-lines"></i> <span data-i18n="lyrics">الكلمات</span></li>
                 <li onclick="window.switchPage('settings')"><i class="fa-solid fa-gear"></i> <span data-i18n="settings">الإعدادات</span></li>
             </ul>
 
@@ -156,6 +165,15 @@
                 </div>
             </div>
 
+            <div id="page-lyrics" class="page">
+                <div class="lyrics-header">
+                    <button class="action-btn" id="copyLyricsBtn" onclick="window.copyLyricsToClipboard()" style="border-radius: 15px;"><i class="fa-regular fa-copy"></i> Copy Lyrics</button>
+                </div>
+                <div class="lyrics-wrapper" id="lyricsContainer">
+                    <p class="lyric-line" data-i18n="lyrics_empty">شغّل أغنية عشان تشوف الكلمات هنا...</p>
+                </div>
+            </div>
+
             <div id="page-settings" class="page">
                 <div class="settings-group">
                     <label data-i18n="prof_settings">إعدادات الحساب / Account Settings</label>
@@ -171,14 +189,6 @@
                     <select id="langSelect" onchange="window.changeLanguage(this.value)">
                         <option value="ar">العربية (Arabic)</option>
                         <option value="en">English (الإنجليزية)</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label data-i18n="quality_label">جودة الصوت / Audio Quality</label>
-                    <select id="qualitySelect" onchange="window.changeQuality(this.value)">
-                        <option value="high" data-i18n="q_high">عالية (High)</option>
-                        <option value="medium" data-i18n="q_med" selected>متوسطة (Medium)</option>
-                        <option value="low" data-i18n="q_low">منخفضة (Low)</option>
                     </select>
                 </div>
             </div>
@@ -230,10 +240,7 @@
             apiKey: "AIzaSyBWfF2YHd8GWg5iUMlKFxnYzANLt6MSb9k",
             authDomain: "eto-host.firebaseapp.com",
             databaseURL: "https://eto-host-default-rtdb.firebaseio.com",
-            projectId: "eto-host",
-            storageBucket: "eto-host.firebasestorage.app",
-            messagingSenderId: "722707070554",
-            appId: "1:722707070554:web:c556e865af6c4a6d822263"
+            projectId: "eto-host"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -251,50 +258,64 @@
         let currentLang = 'ar';
         const audioPlayer = document.getElementById('realAudioPlayer');
 
-        // سيرفرات Piped API لأنها بتسقط كتير (تم إضافة سيرفر قوي بديل)
-        const PIPED_API_BASE = "https://pipedapi.smnz.de"; // بديل ممتاز ولا يرفض الـ CORS غالباً
+        // قائمة سيرفرات للـ Fallback عشان الـ CORS Error بتاع جيت هب
+        const PIPED_APIS = [
+            "https://pipedapi.kavin.rocks",
+            "https://pipedapi.smnz.de",
+            "https://piped-api.garudalinux.org"
+        ];
+
+        // دالة لجلب البيانات وتجربة كذا سيرفر لو الأول رفض
+        async function fetchWithFallback(endpoint) {
+            let lastError;
+            for (const apiBase of PIPED_APIS) {
+                try {
+                    const res = await fetch(`${apiBase}${endpoint}`);
+                    if (res.ok) return await res.json();
+                } catch (err) {
+                    console.warn(`Server ${apiBase} failed. Trying next...`);
+                    lastError = err;
+                }
+            }
+            throw lastError || new Error("All API servers failed");
+        }
 
         const translations = {
             ar: {
-                home: "الرئيسية", search: "بحث", liked: "المفضلة", settings: "الإعدادات",
-                home_title: "الرئيسية", search_title: "ابحث في يوتيوب", liked_title: "الأغاني المفضلة", settings_title: "الإعدادات",
+                home: "الرئيسية", search: "بحث", liked: "المفضلة", lyrics: "الكلمات", settings: "الإعدادات",
+                home_title: "الرئيسية", search_title: "ابحث في يوتيوب", liked_title: "الأغاني المفضلة", lyrics_title: "كلمات الأغنية", settings_title: "الإعدادات",
                 home_desc: "استمع لأغانيك المفضلة من يوتيوب مباشرة!", changeName: "تغيير الاسم", changePic: "تغيير الصورة",
                 search_placeholder: "ابحث عن أغنية أو فنان...", search_btn: "ابحث",
                 ready: "جاهز للتشغيل", select_song: "اختر أغنية", no_liked: "لا توجد أغاني في المفضلة حتى الآن.",
-                lang_label: "اللغة / Language", quality_label: "جودة الصوت", q_high: "عالية", q_med: "متوسطة", q_low: "منخفضة",
-                play: "تشغيل", loading: "جاري التحميل...", prof_settings: "إعدادات الحساب / Account Settings", enter_name: "أدخل اسمك الجديد:"
+                lang_label: "اللغة / Language", play: "تشغيل", loading: "جاري التحميل...", 
+                prof_settings: "إعدادات الحساب / Account Settings", enter_name: "أدخل اسمك الجديد:",
+                lyrics_empty: "شغّل أغنية عشان تشوف الكلمات هنا..."
             },
             en: {
-                home: "Home", search: "Search", liked: "Liked", settings: "Settings",
-                home_title: "Home", search_title: "Search YouTube", liked_title: "Liked Songs", settings_title: "Settings",
+                home: "Home", search: "Search", liked: "Liked", lyrics: "Lyrics", settings: "Settings",
+                home_title: "Home", search_title: "Search YouTube", liked_title: "Liked Songs", lyrics_title: "Song Lyrics", settings_title: "Settings",
                 home_desc: "Listen to your favorite songs directly from YouTube!", changeName: "Change Name", changePic: "Change Picture",
                 search_placeholder: "Search for a song or artist...", search_btn: "Search",
                 ready: "Ready to play", select_song: "Select a song", no_liked: "No liked songs yet.",
-                lang_label: "Language / اللغة", quality_label: "Audio Quality", q_high: "High", q_med: "Medium", q_low: "Low",
-                play: "Play", loading: "Loading...", prof_settings: "Account Settings / إعدادات الحساب", enter_name: "Enter your new name:"
+                lang_label: "Language / اللغة", play: "Play", loading: "Loading...", 
+                prof_settings: "Account Settings / إعدادات الحساب", enter_name: "Enter your new name:",
+                lyrics_empty: "Play a song to see its lyrics here..."
             }
         };
 
-        // --- تهيئة الإعدادات والصوت المحفوظ ---
         function initSettings() {
-            // تحميل الاسم
             const savedName = localStorage.getItem('etoify_user_name') || 'Eng. Mohammed';
             document.getElementById('userName').innerText = savedName;
-
-            // تحميل الصورة
             const savedAvatar = localStorage.getItem('etoify_avatar');
             if (savedAvatar) {
                 document.querySelectorAll('.profile-img').forEach(img => img.src = savedAvatar);
             }
-
-            // تحميل الصوت
             const savedVolume = localStorage.getItem('etoify_volume') !== null ? parseFloat(localStorage.getItem('etoify_volume')) : 1;
             audioPlayer.volume = savedVolume;
             document.getElementById('volumeFill').style.width = (savedVolume * 100) + '%';
         }
         initSettings();
 
-        // --- وظائف رفع وتغيير الصورة والاسم ---
         window.handleAvatarUpload = (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -317,7 +338,6 @@
             }
         };
 
-        // --- وظائف الفايربيز (المفضلة) ---
         const likesRef = ref(db, 'likes/' + userId);
         onValue(likesRef, (snapshot) => {
             likedSongsDb = snapshot.val() || {};
@@ -334,9 +354,7 @@
         };
 
         window.toggleLikeCurrent = () => {
-            if(currentSong) {
-                window.toggleLike(currentSong.id, currentSong.title, currentSong.artist, currentSong.thumbnail);
-            }
+            if(currentSong) window.toggleLike(currentSong.id, currentSong.title, currentSong.artist, currentSong.thumbnail);
         };
 
         function updateAllLikeButtons() {
@@ -363,7 +381,6 @@
             });
         }
 
-        // --- وظائف يوتيوب والتشغيل ---
         window.performSearch = async () => {
             const query = document.getElementById('searchInput').value;
             if(!query) return;
@@ -372,10 +389,8 @@
             document.getElementById('searchResults').innerHTML = '';
 
             try {
-                const res = await fetch(`${PIPED_API_BASE}/search?q=${encodeURIComponent(query)}&filter=music_songs`);
-                if(!res.ok) throw new Error("Network Error");
-                const data = await res.json();
-                
+                // استخدمت دالة الـ Fallback هنا عشان الـ CORS
+                const data = await fetchWithFallback(`/search?q=${encodeURIComponent(query)}&filter=music_songs`);
                 document.getElementById('searchLoader').style.display = 'none';
                 
                 const results = data.items.filter(item => item.type === 'stream').slice(0, 15);
@@ -392,7 +407,7 @@
             } catch (err) {
                 console.error(err);
                 document.getElementById('searchLoader').style.display = 'none';
-                document.getElementById('searchResults').innerHTML = '<p style="color: red;">حدث خطأ في الاتصال بالسيرفر. يرجى التأكد من تشغيل الموقع من خلال (Live Server) وليس (file:///).</p>';
+                document.getElementById('searchResults').innerHTML = '<p style="color: red;">حدث خطأ أثناء البحث، يرجى المحاولة مرة أخرى لاحقاً.</p>';
             }
         };
 
@@ -424,12 +439,13 @@
             document.getElementById('playerArtist').innerText = artist;
             document.getElementById('playerImg').style.backgroundImage = `url('${thumbnail}')`;
             updateAllLikeButtons();
+            
+            // طلب الكلمات في الخلفية
+            fetchLyrics(title, artist);
 
             try {
-                const res = await fetch(`${PIPED_API_BASE}/streams/${id}`);
-                if(!res.ok) throw new Error("Stream API Error");
-                const data = await res.json();
-                
+                // استخدمت دالة الـ Fallback هنا برضو
+                const data = await fetchWithFallback(`/streams/${id}`);
                 const audioStreams = data.audioStreams;
                 if(audioStreams && audioStreams.length > 0) {
                     audioPlayer.src = audioStreams[0].url; 
@@ -441,11 +457,10 @@
                 }
             } catch(e) {
                 console.error(e);
-                document.getElementById('playerTitle').innerText = "خطأ في التشغيل (CORS/API Issue)";
+                document.getElementById('playerTitle').innerText = "خطأ في التشغيل";
             }
         };
 
-        // --- تحكم المشغل ---
         window.togglePlay = () => {
             if(!audioPlayer.src) return;
             if(audioPlayer.paused) {
@@ -459,6 +474,132 @@
             }
         };
 
+        // ==========================================
+        //  منظومة الكلمات (نفس لوجيك البايثون بالمللي)
+        // ==========================================
+        let currentLyricsData = [];
+        let fullLyricsTextForCopy = "";
+
+        // دالة تنظيف العنوان زى اللى في الكلاس 
+        function cleanStringForLyrics(title) {
+            if(!title) return "";
+            title = title.replace(/[\(\[\{].*?[\)\]\}]/g, '');
+            const junkWords = ['official video', 'official audio', 'lyric video', 'lyrics', 'official music video', 'video', 'audio', '4k', '8k', 'high quality', 'hq', 'full hd', 'منتج حصري', 'فيديو كليب', 'حصريا', 'حصرياً', 'كلمات', 'بالكلمات', 'مترجمة', 'مترجم', 'كاملة', 'اغنية', 'أغنية', 'نسخة أصلية', 'ريمكس', 'بطيء', 'موسيقى', 'كليب', 'official', 'music', 'live'];
+            junkWords.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                title = title.replace(regex, '');
+            });
+            title = title.replace(/[^\w\s\u0600-\u06FF]/g, ' ');
+            return title.replace(/\s+/g, ' ').trim();
+        }
+
+        async function fetchLyrics(title, artist) {
+            const container = document.getElementById('lyricsContainer');
+            container.innerHTML = '<p class="lyric-line" style="color: #1DB954;">جاري البحث عن الكلمات...</p>';
+            currentLyricsData = [];
+            fullLyricsTextForCopy = "";
+
+            let cleanTitle = cleanStringForLyrics(title);
+            let cleanArtist = cleanStringForLyrics(artist);
+
+            // لو مفيش فنان واسم الأغنية فيه شرطة، نقسمه
+            if (!cleanArtist && title.match(/[-:|]/)) {
+                let parts = title.split(/[-:|]/);
+                if (parts.length >= 2) {
+                    cleanArtist = cleanStringForLyrics(parts[0]);
+                    cleanTitle = cleanStringForLyrics(parts[1]);
+                }
+            }
+
+            try {
+                let synced = null; let plain = null;
+                // محاولة 1: Get العادي
+                let res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
+                if(res.ok) {
+                    let data = await res.json();
+                    synced = data.syncedLyrics; plain = data.plainLyrics;
+                } else {
+                    // محاولة 2: بحث كامل
+                    let query = `${cleanTitle} ${cleanArtist}`.trim();
+                    res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
+                    if(res.ok) {
+                        let data = await res.json();
+                        if(data && data.length > 0) { synced = data[0].syncedLyrics; plain = data[0].plainLyrics; }
+                        else {
+                            // محاولة 3: بحث بالعنوان بس
+                            res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}`);
+                            if(res.ok) {
+                                let dataTitle = await res.json();
+                                if(dataTitle && dataTitle.length > 0) { synced = dataTitle[0].syncedLyrics; plain = dataTitle[0].plainLyrics; }
+                            }
+                        }
+                    }
+                }
+                renderLyrics(synced, plain);
+            } catch (err) {
+                console.error("Lyrics fetch error:", err);
+                container.innerHTML = '<p class="lyric-line" style="color: red;">خطأ في الاتصال بسيرفر الكلمات.</p>';
+            }
+        }
+
+        function renderLyrics(synced, plain) {
+            const container = document.getElementById('lyricsContainer');
+            container.innerHTML = '<div style="height: 35vh;"></div>'; // Spacer علوي
+
+            if (synced) {
+                const lines = synced.split('\n');
+                const regex = /\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
+                
+                lines.forEach(line => {
+                    const match = line.match(regex);
+                    if (match) {
+                        const mins = parseInt(match[1]);
+                        const secs = parseFloat(match[2]);
+                        const timeInSec = (mins * 60) + secs;
+                        
+                        let text = match[3].trim().replace(/<\d+:\d+(?:\.\d+)?>/g, '').trim();
+                        if (text) fullLyricsTextForCopy += text + "\n";
+                        
+                        const p = document.createElement('p');
+                        p.className = 'lyric-line';
+                        p.innerText = text || "• • •";
+                        // لما تدوس على السطر يروح للوقت بتاعه
+                        p.onclick = () => { audioPlayer.currentTime = timeInSec; }; 
+                        container.appendChild(p);
+                        
+                        currentLyricsData.push({ time: timeInSec, element: p });
+                    }
+                });
+            } else if (plain) {
+                fullLyricsTextForCopy = plain;
+                const p = document.createElement('p');
+                p.className = 'lyric-line';
+                p.style.whiteSpace = 'pre-wrap';
+                p.innerText = plain;
+                container.appendChild(p);
+            } else {
+                fullLyricsTextForCopy = "";
+                container.innerHTML += `<p class="lyric-line">لم يتم العثور على كلمات لهذه الأغنية.</p>`;
+            }
+            container.innerHTML += '<div style="height: 35vh;"></div>'; // Spacer سفلي
+        }
+
+        window.copyLyricsToClipboard = () => {
+            if(fullLyricsTextForCopy) {
+                navigator.clipboard.writeText(fullLyricsTextForCopy);
+                const btn = document.getElementById('copyLyricsBtn');
+                const origText = btn.innerHTML;
+                btn.innerHTML = "<i class='fa-solid fa-check'></i> Copied!";
+                btn.style.backgroundColor = "#2ecc71";
+                
+                setTimeout(() => {
+                    btn.innerHTML = origText;
+                    btn.style.backgroundColor = "var(--primary-color)";
+                }, 1500);
+            }
+        };
+
+        // تحديث الوقت وتزامن الكلمات
         audioPlayer.addEventListener('timeupdate', () => {
             const current = audioPlayer.currentTime;
             const duration = audioPlayer.duration;
@@ -466,6 +607,36 @@
                 document.getElementById('progressFill').style.width = (current / duration) * 100 + '%';
                 document.getElementById('currentTime').innerText = formatTime(current);
                 document.getElementById('totalTime').innerText = formatTime(duration);
+            }
+
+            // اللمسة السحرية بتاعت التزامن (مع تعويض 150 مللي ثانية)
+            if (currentLyricsData.length > 0) {
+                const adjustedPosition = current + 0.150; 
+                let newIdx = -1;
+                
+                for(let i=0; i < currentLyricsData.length; i++) {
+                    if (adjustedPosition >= currentLyricsData[i].time) {
+                        newIdx = i;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (newIdx !== -1) {
+                    const activeElement = document.querySelector('.lyric-line.active');
+                    const targetElement = currentLyricsData[newIdx].element;
+                    
+                    if (activeElement !== targetElement) {
+                        if (activeElement) activeElement.classList.remove('active');
+                        targetElement.classList.add('active');
+                        
+                        // الأنيميشن السلس للنزول السكرول
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }
+                }
             }
         });
 
@@ -484,8 +655,6 @@
             const vol = clickX / width;
             audioPlayer.volume = vol;
             document.getElementById('volumeFill').style.width = (vol * 100) + '%';
-            
-            // حفظ مستوى الصوت ليظل ثابتاً (Global)
             localStorage.setItem('etoify_volume', vol);
         };
 
@@ -495,7 +664,6 @@
             return `${m}:${s < 10 ? '0' : ''}${s}`;
         }
 
-        // --- واجهة المستخدم والتنقل واللغات ---
         window.switchPage = (pageId) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.add('active');
@@ -522,10 +690,6 @@
             });
             
             renderLikedSongs(); 
-        };
-
-        window.changeQuality = (quality) => {
-            localStorage.setItem('etoify_quality', quality);
         };
 
         document.getElementById('searchInput').addEventListener('keypress', function (e) {
